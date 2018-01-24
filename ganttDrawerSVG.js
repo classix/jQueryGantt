@@ -26,11 +26,11 @@
  */
 function Ganttalendar(zoom, startmillis, endMillis, master, minGanttSize) {
   this.master = master; // is the a GantEditor instance
-  this.element; // is the jquery element containing gantt
+  //this.element; // is the jquery element containing gantt
 
-  this.svg; // instance of svg object containing gantt
-  this.tasksGroup; //instance of svg group containing tasks
-  this.linksGroup; //instance of svg group containing links
+  //this.svg; // instance of svg object containing gantt
+  //this.tasksGroup; //instance of svg group containing tasks
+  //this.linksGroup; //instance of svg group containing links
 
   this.zoom = zoom;
   this.minGanttSize = minGanttSize;
@@ -417,7 +417,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
         //create backgound
         var extDep = svg.pattern(defs, "extDep", 0, 0, 10, 10, 0, 0, 10, 10, {patternUnits:'userSpaceOnUse'});
-        var img=svg.image(extDep, 0, 0, 10, 10, self.master.resourceUrl +"hasExternalDeps.png",{opacity:.3});
+        var img=svg.image(extDep, 0, 0, 10, 10, self.master.resourceUrl +"hasExternalDeps.png",{opacity:0.3});
 
         self.svg = svg;
         $(svg).addClass("ganttSVGBox");
@@ -514,7 +514,7 @@ Ganttalendar.prototype.drawTask = function (task) {
 
         $("body").off("click.focused").one("click.focused", function () {
           $(".ganttSVGBox .focused").removeClass("focused");
-        })
+        });
 
       }).dblclick(function () {
         self.master.showTaskEditor($(this).attr("taskid"));
@@ -645,7 +645,7 @@ Ganttalendar.prototype.drawTask = function (task) {
             depInp.blur();
           }
         }
-      })
+      });
     });
   }
   //ask for redraw link
@@ -685,11 +685,11 @@ Ganttalendar.prototype.drawTask = function (task) {
       svg.rect(taskSvg, 0, 0, "100%", 3, {fill:"#000"});
 
     if (task.startIsMilestone) {
-      svg.image(taskSvg, -9, dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png")
+      svg.image(taskSvg, -9, dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png");
     }
 
     if (task.endIsMilestone) {
-      svg.image(taskSvg, "100%",dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png", {transform:"translate(-9)"})
+      svg.image(taskSvg, "100%",dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png", {transform:"translate(-9)"});
     }
 
     //task label
@@ -700,7 +700,7 @@ Ganttalendar.prototype.drawTask = function (task) {
       svg.circle(taskSvg, "0",  dimensions.height/2,dimensions.height/3, {class:"taskLinkStartSVG linkHandleSVG", transform:"translate("+(-dimensions.height/3+1)+")"});
       svg.circle(taskSvg, "100%",dimensions.height/2,dimensions.height/3, {class:"taskLinkEndSVG linkHandleSVG", transform:"translate("+(dimensions.height/3-1)+")"});
     }
-    return taskSvg
+    return taskSvg;
   }
 
 };
@@ -844,14 +844,13 @@ Ganttalendar.prototype.drawLink = function (from, to, type) {
       e.stopPropagation();// to avoid body remove focused
       self.element.find("[class*=focused]").removeClass("focused");
       $(".ganttSVGBox .focused").removeClass("focused");
-      var el = $(this);
       if (!self.resDrop)
         el.addClass("focused");
       self.resDrop = false; //hack to avoid select
 
       $("body").off("click.focused").one("click.focused", function () {
         $(".ganttSVGBox .focused").removeClass("focused");
-      })
+      });
 
     });
   }
@@ -873,7 +872,7 @@ Ganttalendar.prototype.redrawLinks = function () {
     var collapsedDescendant = [];
 
     //[expand]
-    var collapsedDescendant = self.master.getCollapsedDescendant();
+    collapsedDescendant = self.master.getCollapsedDescendant();
     for (var i = 0; i < self.master.links.length; i++) {
       var link = self.master.links[i];
 
@@ -1020,13 +1019,16 @@ $.fn.dragExtedSVG = function (svg, opt) {
 
           $("body").unselectable();
 
+
+          var one;
+
           //start resize end
           if (options.canResize && (x2-x1)>3*options.resizeZoneWidth && (posx<=x2 &&  posx >= x2- options.resizeZoneWidth)) {
             //store offset mouse x2
             offsetMouseRect = x2 - e.pageX;
             target.attr("oldw", target.attr("width"));
 
-            var one = true;
+            one = true;
 
             //bind event for start resizing
             $(svg).bind("mousemove.deSVG", function (e) {
@@ -1055,7 +1057,7 @@ $.fn.dragExtedSVG = function (svg, opt) {
             offsetMouseRect = parseFloat(target.attr("x"));
             target.attr("oldw", target.attr("width")); //todo controllare se è ancora usato oldw
 
-            var one = true;
+            one = true;
 
             //bind event for start resizing
             $(svg).bind("mousemove.deSVG", function (e) {
@@ -1087,7 +1089,7 @@ $.fn.dragExtedSVG = function (svg, opt) {
             offsetMouseRect = parseFloat(target.attr("x")) - e.pageX;
             target.attr("oldx", target.attr("x"));
 
-            var one = true;
+            one = true;
             //bind event for start dragging
             $(svg).bind("mousemove.deSVG",function (e) {
               if (one) {

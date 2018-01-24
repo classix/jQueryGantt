@@ -64,11 +64,6 @@ function Task(id, name, code, level, start, end, duration, collapsed) {
 
   this.collapsed = collapsed;
 
-  this.rowElement; //row editor html element
-  this.ganttElement; //gantt html element
-  this.master;
-
-
   this.assigs = [];
 }
 
@@ -462,6 +457,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
     var todoOk = true;
     task.status = newStatus;
 
+    var sups, par;
 
     //xxxx -> STATUS_DONE            may activate dependent tasks, both suspended and undefined. Will set to done all children.
     //STATUS_FAILED -> STATUS_DONE   do nothing if not forced by hand
@@ -473,11 +469,10 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
         return false;
       }
 
-
       if ((manuallyChanged || oldStatus != "STATUS_FAILED")) { //cannot set failed task as closed for cascade - only if changed manually
 
         //can be closed only if superiors are already done
-        var sups = task.getSuperiors();
+        sups = task.getSuperiors();
         for (var i = 0; i < sups.length; i++) {
           if (sups[i].from.status != "STATUS_DONE" && cone.indexOf(sups[i].from)<0) { // è un errore se un predecessore è non chiuso ed è fuori dal cono
             if (manuallyChanged || propagateFromParent)  //genere un errore bloccante se è cambiato a mano o se il cambiamento arriva dal parent ed ho una dipendenza fuori dal cono (altrimenti avrei un attivo figlio di un chiuso
@@ -513,12 +508,12 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
       if ((manuallyChanged || oldStatus != "STATUS_FAILED")) { //cannot set failed task as closed for cascade - only if changed manually
 
         //can be active only if superiors are already done, not only on this task, but also on ancestors superiors
-        var sups = task.getSuperiors();
+        sups = task.getSuperiors();
 
-        for (var i = 0; i < sups.length; i++) {
-          if (sups[i].from.status != "STATUS_DONE") {
+        for (var j = 0; j < sups.length; j++) {
+          if (sups[j].from.status != "STATUS_DONE") {
             if (manuallyChanged || propagateFromChildren)
-              task.master.setErrorOnTransaction(GanttMaster.messages["GANTT_ERROR_DEPENDS_ON_OPEN_TASK"] + "\n\"" + sups[i].from.name + "\" -> \"" + task.name + "\"");
+              task.master.setErrorOnTransaction(GanttMaster.messages["GANTT_ERROR_DEPENDS_ON_OPEN_TASK"] + "\n\"" + sups[j].from.name + "\" -> \"" + task.name + "\"");
             todoOk = false;
             break;
           }
@@ -526,7 +521,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
 
         // check if parent is already active
         if (todoOk) {
-          var par = task.getParent();
+          par = task.getParent();
           if (par && par.status != "STATUS_ACTIVE") {
             // todoOk = propagateStatus(par, "STATUS_ACTIVE", false, false, true); //todo abbiamo deciso di non far propagare lo status verso l'alto
             todoOk = false;
@@ -552,7 +547,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
       if (manuallyChanged || oldStatus != "STATUS_FAILED") { //cannot set failed task as closed for cascade - only if changed manually
 
         //check if parent if not active
-        var par = task.getParent();
+        par = task.getParent();
         if (par && (par.status != "STATUS_ACTIVE" && par.status != "STATUS_SUSPENDED")) {
           todoOk = false;
         }
@@ -814,8 +809,8 @@ Task.prototype.isDependent = function (t) {
       return true;
   }
   // is t an indirect dependency
-  for (var i = 0; i < dep.length; i++) {
-    if (dep[i].to.isDependent(t)) {
+  for (var j = 0; j < dep.length; j++) {
+    if (dep[j].to.isDependent(t)) {
       return true;
     }
   }
@@ -930,9 +925,9 @@ Task.prototype.outdent = function () {
 
 
   //enlarge me if inherited children are larger
-  for (var i = 0; i < chds.length; i++) {
+  for (var k = 0; k < chds.length; k++) {
     //remove links from me to my new children
-    chds[i].setPeriod(chds[i].start + 1, chds[i].end + 1);
+    chds[k].setPeriod(chds[k].start + 1, chds[k].end + 1);
   }
 
   //recompute depends string

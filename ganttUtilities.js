@@ -358,9 +358,9 @@ $.splittify = {
         var newW = totalW * this.perc / 100;
         newW = newW > this.firstBoxMinWidth ? newW : this.firstBoxMinWidth;
         newW = newW > totalW - splW - splitter.secondBoxMinWidth ? totalW - splW - splitter.secondBoxMinWidth : newW;
-        this.firstBox.animate({width: newW}, animTime, function () {$(this).css("overflow-x", "auto")});
+        this.firstBox.animate({width: newW}, animTime, function () {$(this).css("overflow-x", "auto");});
         this.splitterBar.animate({left: newW}, animTime);
-        this.secondBox.animate({left: newW + this.splitterBar.width(), width: totalW - newW - splW}, animTime, function () {$(this).css("overflow", "auto")});
+        this.secondBox.animate({left: newW + this.splitterBar.width(), width: totalW - newW - splW}, animTime, function () {$(this).css("overflow", "auto");});
 
         storePosition();
       };
@@ -368,7 +368,7 @@ $.splittify = {
       var self = this;
       this.splitterBar.on("dblclick", function () {
         self.resize(50, true);
-      })
+      });
     }
 
 
@@ -412,7 +412,7 @@ function computeStartDate(start) {
 }
 
 function computeEnd(end) {
-  return computeEndDate(end).getTime()
+  return computeEndDate(end).getTime();
 }
 function computeEndDate(end) {
   var d = new Date(end - 3600000 * 12);
@@ -471,15 +471,16 @@ function resynchDates(leavingField, startField, startMilesField, durationField, 
     }
 
     var date = new Date();
+    var workingDays;
     if ("CHANGE_END" == command) {
       date.setTime(start);
-      var workingDays = duration - 1;
+      workingDays = duration - 1;
       date.incrementDateByWorkingDays(workingDays);
       date.setHours(23, 59, 59, 999);
       end = computeEnd(date.getTime());
     } else if ("CHANGE_START" == command) {
       date.setTime(end);
-      var workingDays = duration - 1;
+      workingDays = duration - 1;
       date.incrementDateByWorkingDays(-workingDays);
       date.setHours(0, 0, 0, 0);
       start = computeStart(date.getTime());
@@ -503,7 +504,7 @@ function resynchDates(leavingField, startField, startMilesField, durationField, 
   var endIsMilesAndFilled = endIsFilled && (endMilesField.prop("checked") || endField.is("[readOnly]"));
 
   if (durIsFilled) {
-    if (parseInt(durationField.val()) == NaN || parseInt(durationField.val()) < 1)
+    if (isNaN(parseInt(durationField.val())) || parseInt(durationField.val()) < 1)
       durationField.val(1);
   }
 
@@ -553,7 +554,7 @@ if (!Array.prototype.filter) {
     if (typeof fun != "function")
       throw new TypeError();
 
-    var res = new Array();
+    var res = [];
     var thisp = arguments[1];
     for (var i = 0; i < len; i++) {
       if (i in this) {

@@ -242,8 +242,8 @@ GridEditor.prototype.bindRowEvents = function (task, taskRow) {
 
   self.bindRowExpandEvents(task, taskRow);
   if (this.master.permissions.canSeePopEdit) {
-    taskRow.find(".edit").click(function () {self.openFullEditor(task, false)});
-    taskRow.find(".taskAssigs").dblclick(function () {self.openFullEditor(task, true)});
+    taskRow.find(".edit").click(function () {self.openFullEditor(task, false);});
+    taskRow.find(".taskAssigs").dblclick(function () {self.openFullEditor(task, true);});
   }
 };
 
@@ -340,6 +340,8 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     var field = el.prop("name");
     //console.debug("blur",field)
 
+    var par;
+
     if (el.isValueChanged()) {
       self.master.beginTransaction();
 
@@ -375,15 +377,15 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           }
 
           if (oneFailed){
-            task.changeStatus("STATUS_FAILED")
+            task.changeStatus("STATUS_FAILED");
           } else if (oneUndefined){
-            task.changeStatus("STATUS_UNDEFINED")
+            task.changeStatus("STATUS_UNDEFINED");
           } else if (oneActive){
-            task.changeStatus("STATUS_SUSPENDED")
+            task.changeStatus("STATUS_SUSPENDED");
           } else  if (oneSuspended){
-            task.changeStatus("STATUS_SUSPENDED")
+            task.changeStatus("STATUS_SUSPENDED");
           } else {
-            task.changeStatus("STATUS_ACTIVE")
+            task.changeStatus("STATUS_ACTIVE");
           }
 
 
@@ -395,7 +397,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         self.master.changeTaskDates(task, dates.start, dates.end);
 
       } else if (field == "name" && el.val() == "") { // remove unfilled task
-        var par = task.getParent();
+        par = task.getParent();
         task.deleteTask();
         self.fillEmptyLines();
 
@@ -414,13 +416,13 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
 
     } else if (field == "name" && el.val() == "") { // remove unfilled task even if not changed
       if (task.getRow()!=0) {
-        var par = task.getParent();
+        par = task.getParent();
         task.deleteTask();
         self.fillEmptyLines();
         if (par) self.refreshExpandStatus(par);
         self.master.gantt.synchHighlight();
       }else {
-        el.oneTime(1,"foc",function(){$(this).focus()}); //
+        el.oneTime(1,"foc",function(){$(this).focus();}); //
         event.preventDefault();
         //return false;
       }
@@ -437,6 +439,8 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
 
     var ret = true;
     if (!event.ctrlKey) {
+      var td, inp;
+
       switch (event.keyCode) {
 
         case 37: //left arrow
@@ -451,8 +455,8 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         case 38: //up arrow
           //var prevRow = theRow.prev();
           var prevRow = theRow.prevAll(":visible:first");
-          var td = prevRow.find("td").eq(col);
-          var inp = td.find("input");
+          td = prevRow.find("td").eq(col);
+          inp = td.find("input");
 
           if (inp.length > 0)
             inp.focus();
@@ -460,8 +464,8 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         case 40: //down arrow
           //var nextRow = theRow.next();
           var nextRow = theRow.nextAll(":visible:first");
-          var td = nextRow.find("td").eq(col);
-          var inp = td.find("input");
+          td = nextRow.find("td").eq(col);
+          inp = td.find("input");
           if (inp.length > 0)
             inp.focus();
           else
@@ -662,8 +666,9 @@ GridEditor.prototype.openFullEditor = function (task, editOnlyAssig) {
 
         //check if an existing assig has been deleted and re-created with the same values
         var found = false;
+        var ass;
         for (var i = 0; i < task.assigs.length; i++) {
-          var ass = task.assigs[i];
+          ass = task.assigs[i];
 
           if (assId == ass.id) {
             ass.effort = effort;
@@ -685,7 +690,7 @@ GridEditor.prototype.openFullEditor = function (task, editOnlyAssig) {
         if (!found && resId && roleId) { //insert
           cnt++;
           //console.debug("adding assig row:", assId,resId,resName,roleId,effort)
-          var ass = task.createAssignment("tmp_" + new Date().getTime()+"_"+cnt, resId, roleId, effort);
+          ass = task.createAssignment("tmp_" + new Date().getTime()+"_"+cnt, resId, roleId, effort);
           ass.touched = true;
         }
 

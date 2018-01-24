@@ -25,18 +25,18 @@ function GanttMaster() {
   this.deletedTaskIds = [];
   this.links = [];
 
-  this.editor; //element for editor
-  this.gantt; //element for gantt
-  this.splitter; //element for splitter
+  //this.editor; //element for editor
+  //this.gantt; //element for gantt
+  //this.splitter; //element for splitter
 
   this.isMultiRoot=false; // set to true in case of tasklist
 
-  this.workSpace;  // the original element used for containing everything
-  this.element; // editor and gantt box without buttons
+  //this.workSpace;  // the original element used for containing everything
+  //this.element; // editor and gantt box without buttons
 
 
-  this.resources; //list of resources
-  this.roles;  //list of roles
+  //this.resources; //list of resources
+  //this.roles;  //list of roles
 
   this.minEditableDate = 0;
   this.maxEditableDate = Infinity;
@@ -64,10 +64,10 @@ function GanttMaster() {
   this.firstDayOfWeek = Date.firstDayOfWeek;
   this.serverClientTimeOffset = 0;
 
-  this.currentTask; // task currently selected;
+  //this.currentTask; // task currently selected;
 
   this.resourceUrl = "res/"; // URL to resources (images etc.)
-  this.__currentTransaction;  // a transaction object holds previous state during changes
+  //this.__currentTransaction;  // a transaction object holds previous state during changes
   this.__undoStack = [];
   this.__redoStack = [];
   this.__inUndoRedo = false; // a control flag to avoid Undo/Redo stacks reset when needed
@@ -84,7 +84,7 @@ GanttMaster.prototype.init = function (workSpace) {
   this.element = place;
 
   //by default task are coloured by status
-  this.element.addClass('colorByStatus' )
+  this.element.addClass('colorByStatus');
 
   var self = this;
   //load templates
@@ -95,7 +95,7 @@ GanttMaster.prototype.init = function (workSpace) {
   place.append(this.editor.gridified);
 
   //create gantt
-  this.gantt = new Ganttalendar("m", new Date().getTime() - 3600000 * 24 * 2, new Date().getTime() + 3600000 * 24 * 15, this, place.width() * .6);
+  this.gantt = new Ganttalendar("m", new Date().getTime() - 3600000 * 24 * 2, new Date().getTime() + 3600000 * 24 * 15, this, place.width() * 0.6);
 
   //setup splitter
   self.splitter = $.splittify.init(place, this.editor.gridified, this.gantt.element, 60);
@@ -238,7 +238,7 @@ GanttMaster.prototype.init = function (workSpace) {
   $(window).resize(function () {
     place.css({width: "100%", height: $(window).height() - place.position().top});
     place.trigger("resize.gantt");
-  }).oneTime(2, "resize", function () {$(this).trigger("resize")});
+  }).oneTime(2, "resize", function () {$(this).trigger("resize");});
 
 
 };
@@ -276,7 +276,7 @@ GanttMaster.prototype.getOrCreateResource = function (id, name) {
   if (!res && id && name) {
     res = this.createResource(id, name);
   }
-  return res
+  return res;
 };
 
 GanttMaster.prototype.createResource = function (id, name) {
@@ -293,8 +293,8 @@ GanttMaster.prototype.updateDependsStrings = function () {
     this.tasks[i].depends = "";
   }
 
-  for (var i = 0; i < this.links.length; i++) {
-    var link = this.links[i];
+  for (var j = 0; j < this.links.length; j++) {
+    var link = this.links[j];
     var dep = link.to.depends;
     link.to.depends = link.to.depends + (link.to.depends == "" ? "" : ",") + (link.from.getRow() + 1) + (link.lag ? ":" + link.lag : "");
   }
@@ -464,7 +464,7 @@ GanttMaster.prototype.loadProject = function (project) {
 
   this.endTransaction();
   var self = this;
-  this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday()});
+  this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
 };
 
 
@@ -474,8 +474,10 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   //reset
   this.reset();
 
+  var task;
+
   for (var i = 0; i < tasks.length; i++) {
-    var task = tasks[i];
+    task = tasks[i];
     if (!(task instanceof Task)) {
       var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.duration, task.collapsed);
       for (var key in task) {
@@ -489,8 +491,8 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   }
 
   //var prof=new Profiler("gm_loadTasks_addTaskLoop");
-  for (var i = 0; i < this.tasks.length; i++) {
-    var task = this.tasks[i];
+  for (var j = 0; j < this.tasks.length; j++) {
+    task = this.tasks[j];
 
 
     var numOfError = this.__currentTransaction && this.__currentTransaction.errors ? this.__currentTransaction.errors.length : 0;
@@ -706,7 +708,7 @@ GanttMaster.prototype.markUnChangedTasksAndAssignments=function(newProject){
     for (var i=0;i<newProject.tasks.length;i++){
       var newTask=newProject.tasks[i];
       //se è un task che c'erà già
-      if (typeof (newTask.id)=="String" && !newTask.id.startsWith("tmp_")){
+      if (typeof (newTask.id) === "string" && !newTask.id.startsWith("tmp_")){
         //si recupera il vecchio task
         var oldTask;
         for (var j=0;j<oldProject.tasks.length;j++){
@@ -743,8 +745,8 @@ GanttMaster.prototype.markUnChangedTasksAndAssignments=function(newProject){
 
           //se abbiamo trovato il vecchio task e questo aveva delle assegnazioni
           if (oldTask && oldTask.assigs && oldTask.assigs.length>0){
-            for (var j=0;j<oldTask.assigs.length;j++){
-              var oldAssig=oldTask.assigs[j];
+            for (var m=0;m<oldTask.assigs.length;m++){
+              var oldAssig=oldTask.assigs[m];
               //si cerca la nuova assegnazione corrispondente
               var newAssig;
               for (var k=0;k<newTask.assigs.length;k++){
@@ -837,8 +839,8 @@ GanttMaster.prototype.updateLinks = function (task) {
 
     var loop = false;
     //check superiors
-    for (var i = 0; i < sups.length; i++) {
-      var supLink = sups[i];
+    for (var j = 0; j < sups.length; j++) {
+      var supLink = sups[j];
       if (supLink.from == target) {
         loop = true;
         break;
@@ -1161,7 +1163,7 @@ GanttMaster.prototype.getCollapsedDescendant = function () {
     if (task.collapsed) collapsedDescendant = collapsedDescendant.concat(task.getDescendant());
   }
   return collapsedDescendant;
-}
+};
 
 
 
@@ -1221,7 +1223,7 @@ GanttMaster.prototype.isTransactionInError = function () {
     console.error("Transaction never started.");
     return true;
   } else {
-    return this.__currentTransaction.errors.length > 0
+    return this.__currentTransaction.errors.length > 0;
   }
 
 };
@@ -1264,8 +1266,8 @@ GanttMaster.prototype.endTransaction = function () {
 
     //compose error message
     var msg = "ERROR:\n";
-    for (var i = 0; i < this.__currentTransaction.errors.length; i++) {
-      var err = this.__currentTransaction.errors[i];
+    for (var j = 0; j < this.__currentTransaction.errors.length; j++) {
+      var err = this.__currentTransaction.errors[j];
       msg = msg + err.msg + "\n\n";
     }
     alert(msg);
@@ -1410,17 +1412,17 @@ GanttMaster.prototype.computeCriticalPath = function () {
     var progress = false;
 
     // find a new task to calculate
-    for (var i = 0; i < remaining.length; i++) {
-      var task = remaining[i];
+    for (var k = 0; k < remaining.length; k++) {
+      var task = remaining[k];
       var inferiorTasks = task.getInferiorTasks();
 
       if (containsAll(completed, inferiorTasks)) {
         // all dependencies calculated, critical cost is max dependency critical cost, plus our cost
         var critical = 0;
         for (var j = 0; j < inferiorTasks.length; j++) {
-          var t = inferiorTasks[j];
-          if (t.criticalCost > critical) {
-            critical = t.criticalCost;
+          var ta = inferiorTasks[j];
+          if (ta.criticalCost > critical) {
+            critical = ta.criticalCost;
           }
         }
         task.criticalCost = critical + task.duration;
@@ -1466,9 +1468,9 @@ GanttMaster.prototype.computeCriticalPath = function () {
         max = t.criticalCost;
     }
     //console.debug("Critical path length (cost): " + max);
-    for (var i = 0; i < tasks.length; i++) {
-      var t = tasks[i];
-      t.setLatest(max);
+    for (var j = 0; j < tasks.length; j++) {
+      var ta = tasks[j];
+      ta.setLatest(max);
     }
   }
 
@@ -1506,7 +1508,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
   function calculateCritical(tasks) {
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
-      t.isCritical = (t.earlyStart == t.latestStart)
+      t.isCritical = (t.earlyStart == t.latestStart);
     }
   }
 
@@ -1552,5 +1554,5 @@ GanttMaster.prototype.manageSaveRequired=function(ev, showSave) {
     $("#LOG_CHANGES_CONTAINER").hide();
   }
 
-}
+};
 
