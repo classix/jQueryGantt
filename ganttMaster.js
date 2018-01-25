@@ -88,7 +88,7 @@ GanttMaster.prototype.init = function (workSpace) {
 
   var self = this;
   //load templates
-  $("#gantEditorTemplates").loadTemplates().remove();
+  $.JST.loadTemplates();
 
   //create editor
   this.editor = new GridEditor(this);
@@ -1428,7 +1428,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
         task.criticalCost = critical + task.duration;
         // set task as calculated an remove
         completed.push(task);
-        remaining.splice(i, 1);
+        remaining.splice(k, 1);
 
         // note we are making progress
         progress = true;

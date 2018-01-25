@@ -9,6 +9,8 @@
     "grunt-contrib-cssmin": "*",
     "grunt-contrib-jshint": "*",
     "grunt-contrib-uglify": "*",
+    "grunt-contrib-htmlmin": "*",
+    "grunt-angular-templates": "^1.1.0",
     "load-grunt-tasks": "*"
   }
 }
