@@ -22,9 +22,9 @@ body styles
 -------------------------------------------------------
 */
 BODY, TBODY {
-  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-family: Tahoma, Verdana, "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
   /*font-family: 'Open Sans', sans-serif;*/
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
   color: #1e2f41;
   text-decoration: none;
@@ -590,7 +590,7 @@ select {
   border: 1px solid #91B4B7;
   padding: 4px;
   font-size: 16px;
-  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-family: Tahoma, Verdana, "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
 }
 
 .formElements {
@@ -602,7 +602,7 @@ select {
   -webkit-border-radius: 3px;
   -o-border-radius: 3px;
   border-radius: 3px;
-  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-family: Tahoma, Verdana, "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
 }
 
 .formElementsError {
@@ -631,7 +631,7 @@ input {
   -webkit-border-radius: 3px;
   -o-border-radius: 3px;
   border-radius: 3px;
-  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-family: Tahoma, Verdana, "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
 }
 
 .confirmBox {
@@ -701,7 +701,7 @@ iframe#bwinPopup {
   border-radius: 3px;
   color: #878686;
   display: inline-block;
-  font-family: sans-serif;
+  font-family: Tahoma, Verdana, sans-serif;
   font-size: 12px;
   padding: 4px 8px 4px 14px;
   text-decoration: none;

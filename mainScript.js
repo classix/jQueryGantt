@@ -44,8 +44,9 @@ var initGantt = function () {
   ge = new GanttMaster();
   ge.set100OnClose=true;
 
-  ge.init($("#workSpace"));
   loadI18n(); //overwrite with localized ones
+  ge.init($("#workSpace"));
+  
 };
 
 var loadData = function (project) {
@@ -80,6 +81,43 @@ function loadI18n() {
 
     "GANTT_QUARTER_SHORT":"trim.",
     "GANTT_SEMESTER_SHORT":"sem."
+  };
+
+  GanttMaster.languageItems = {
+    "STATUS_ACTIVE": "In Bearbeitung",
+    "STATUS_DONE": "Erledigt",
+    "STATUS_FAILED": "Fehlgeschalgen",
+    "STATUS_SUSPENDED": "Suspendiert",
+    "STATUS_UNDEFINED": "Undefiniert",
+    "BUTTON_UNDO": "Rückgängig",
+    "BUTTON_REDO": "Wiederholen",
+    "BUTTON_INSERT_ABOVE": "Aktivität davon einfügen",
+    "BUTTON_INSERT_BELOW": "Aktivität danach einfügen",
+    "BUTTON_UNINDENT_TASK": "Aktivität nach links verschieben",
+    "BUTTON_INDENT_TASK": "Aktivität nach rechts verschieben",
+    "BUTTON_MOVE_UP": "Aktivität nach oben verschieben",
+    "BUTTON_MOVE_DOWN": "Aktivität nach unten verschieben",
+    "BUTTON_DELETE": "Löschen",
+    "BUTTON_EXPAND_ALL": "Expandieren",
+    "BUTTON_COLLAPSE_ALL": "Zusammenklappen",
+    "BUTTON_ZOOM_OUT": "Zeitachse verkleinern",
+    "BUTTON_ZOOM_IN": "Zeitachse vergrößern",
+    "BUTTON_CRITICAL_PATH": "Kritischen Pfad anzeigen",
+    "BUTTON_SHOW_ONLY_EDITOR": "Tabelle ausblenden",
+    "BUTTON_SPLITTER_CENTER": "Ansicht zentrieren",
+    "BUTTON_SHOW_ONLY_TABLE": "Diagrammbereich ausblenden",
+    "BUTTON_FULLSCREEN": "Vollbild",
+    "BUTTON_SAVE": "Speichern",
+    "NAME_EINGEBEN": "Namen eingeben",
+    "HEADER_CODE": "Abk.",
+    "HEADER_NAME": "Aktivitätsname",
+    "HEADER_START_MILESTONE": "Startdatum ist ein Meilenstein",
+    "HEADER_START_DATE": "Startdatum",
+    "HEADER_END_MILESTONE": "Enddatum ist ein Meilenstein",
+    "HEADER_END_DATE": "Enddatum",
+    "HEADER_DURATION": "Dauer",
+    "HEADER_PROGRESS": "Fortschritt",
+    "HEADER_DEPENDENCIES": "Abhängigkeiten"
   };
 }
 

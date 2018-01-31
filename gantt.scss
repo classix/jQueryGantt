@@ -43,7 +43,7 @@
     overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
-    font-size: 14px
+    font-size: 13px
   }
 
   .gdfCell {
@@ -51,7 +51,7 @@
     padding:4px 2px;
     border-bottom: 1px solid #eee;
     border-right: 1px solid #eee;
-    font-family: arial, helvetica, sans-serif;
+    font-family: Tahoma, Verdana, arial, helvetica, sans-serif;
   }
 
   .gdfCell.noClip{
@@ -62,7 +62,7 @@
     min-width: 5px;
     height: 30px;
     background-color: #eee;
-    border-bottom:2px solid #bbb;
+    border-bottom:1px solid #bbb;
     border-right: 1px solid #bbb;
   }
 
@@ -185,7 +185,7 @@
     z-index: 2;
     top:0;
     /*background: #EEEEEE;*/
-    height: 42px;
+    height: 40px;
 
   }
 
@@ -228,7 +228,7 @@
     margin: 0;
     border-left:1px solid #b0b0b0;
     /*border-right: 1px solid #bbb;*/
-    border-bottom:2px solid #bbb;
+    border-bottom:1px solid #bbb;
     background: #EEEEEE;
   }
 
@@ -270,7 +270,7 @@
 
   .btnSave {
     float: right;
-    padding: 5px !important;
+    padding: 5px 10px 5px 10px !important;
     margin: 7px 15px 0px 0px !important;
   }
 
@@ -332,7 +332,8 @@
   }
 
   .ganttHead2 th.holyH{
-    background-color: rgba(236, 195, 176, 0.40);
+    background-color: #de6e0d;
+    color: white;
   }
   .ganttBodyCell.holy{
     background-color: rgba(255, 245, 230, 0.51);
@@ -419,7 +420,7 @@
 
   .taskEditRow input, .columnWidthTest{
     border: 0 none;
-    font-size: 14px;
+    font-size: 13px;
     height: 20px;
     margin: 0;
     padding:0;
@@ -455,6 +456,7 @@
   .isGanttList .taskEditRow:nth-child(odd), .assigEditRow:nth-child(odd){
     background-color: #ffffff;
   }
+
   .isGanttList .taskEditRow:nth-child(even), .assigEditRow:nth-child(even){
     background-color: #ffffff;
   }
