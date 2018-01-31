@@ -118,9 +118,6 @@ $.gridify = function (table, opt) {
         $("body").removeClass("gdfHResizing");
         delete $.gridify.columInResize;
 
-        //save columns dimension
-        storeGridState();
-
       });
     }
 
@@ -147,45 +144,10 @@ $.gridify = function (table, opt) {
     col.width(w);
     col.data("fTh").width(w);
 
-    //save columns dimension
-    storeGridState();
     return false;
 
   }).addClass("gdfied unselectable").attr("unselectable", "true");
 
-
-  function storeGridState() {
-    //console.debug("storeGridState");
-    if (localStorage) {
-      var gridState = {};
-
-      var colSizes = [];
-      $(".gdfTable .gdfColHeader").each(function () {
-        colSizes.push($(this).outerWidth());
-      });
-
-      gridState.colSizes = colSizes;
-
-      localStorage.setObject("TWPGanttGridState", gridState);
-      //console.debug("gridState",localStorage.getItem("TWPGanttGridState"));
-    }
-  }
-
-  function loadGridState() {
-    //console.debug("loadGridState")
-    if (localStorage) {
-      if (localStorage.getObject("TWPGanttGridState")) {
-        var gridState = localStorage.getObject("TWPGanttGridState");
-        if (gridState.colSizes) {
-          box.find(".gdfTable .gdfColHeader").each(function (i) {
-            $(this).width(gridState.colSizes[i]);
-          });
-        }
-      }
-    }
-  }
-
-  loadGridState();
   return box;
 };
 
@@ -205,19 +167,6 @@ $.splittify = {
 
     var splitter = new Splitter(element, firstBox, secondBox, splitterBar);
     splitter.perc =  perc;
-
-    //override with saved one
-    loadPosition();
-
-    /*var toLeft = $("<div>").addClass("toLeft").html("{").click(function () {splitter.resize(0.001, 300);});
-    splitterBar.append(toLeft);
-
-    var toCenter = $("<div>").addClass("toCenter").html("&#xa9;").click(function () {splitter.resize(50, 300);});
-    splitterBar.append(toCenter);
-
-    var toRight = $("<div>").addClass("toRight").html("}").click(function () {splitter.resize(99.9999, 300);});
-    splitterBar.append(toRight);*/
-
 
     firstBox.append(first);
     secondBox.append(second);
@@ -271,8 +220,6 @@ $.splittify = {
         delete $.splittify.splitterBar;
 
         $("body").removeClass("gdfHResizing");
-
-        storePosition();
       });
     });
 
@@ -362,7 +309,6 @@ $.splittify = {
         this.splitterBar.animate({left: newW}, animTime);
         this.secondBox.animate({left: newW + this.splitterBar.width(), width: totalW - newW - splW}, animTime, function () {$(this).css("overflow", "auto");});
 
-        storePosition();
       };
 
       var self = this;
@@ -370,26 +316,7 @@ $.splittify = {
         self.resize(50, true);
       });
     }
-
-
-    function storePosition () {
-      //console.debug("storePosition",splitter.perc);
-      if (localStorage) {
-        localStorage.setItem("TWPGanttSplitPos",splitter.perc);
-      }
-    }
-
-    function loadPosition () {
-      //console.debug("loadPosition");
-      if (localStorage) {
-        if (localStorage.getItem("TWPGanttSplitPos")) {
-          splitter.perc=parseFloat(localStorage.getItem("TWPGanttSplitPos"));
-        }
-      }
-    }
-
-
-
+    
     return splitter;
   }
 

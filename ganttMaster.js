@@ -434,7 +434,7 @@ GanttMaster.prototype.loadProject = function (project) {
 
 
   //recover stored ccollapsed statuas
-  var collTasks=this.loadCollapsedTasks();
+  var collTasks= [];
 
   //shift dates in order to have client side the same hour (e.g.: 23:59) of the server side
   for (var i = 0; i < project.tasks.length; i++) {
@@ -677,9 +677,6 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
     ret.canWriteOnParent = this.permissions.canWriteOnParent;
     ret.zoom = this.gantt.zoom;
 
-    //save collapsed tasks on localStorage
-    this.storeCollapsedTasks();
-
     //mark un-changed task and assignments
     this.markUnChangedTasksAndAssignments(ret);
 
@@ -765,43 +762,6 @@ GanttMaster.prototype.markUnChangedTasksAndAssignments=function(newProject){
     }
   }
 };
-
-
-GanttMaster.prototype.loadCollapsedTasks = function () {
-  var collTasks=[];
-  if (localStorage ) {
-    if (localStorage.getObject("TWPGanttCollTasks"))
-      collTasks = localStorage.getObject("TWPGanttCollTasks");
-    return collTasks;
-  }
-};
-
-GanttMaster.prototype.storeCollapsedTasks = function () {
-  //console.debug("storeCollapsedTasks");
-  if (localStorage) {
-    var collTasks;
-    if (!localStorage.getObject("TWPGanttCollTasks"))
-      collTasks = [];
-    else
-      collTasks = localStorage.getObject("TWPGanttCollTasks");
-
-
-    for (var i = 0; i < this.tasks.length; i++) {
-      var task = this.tasks[i];
-
-      var pos=collTasks.indexOf(task.id);
-      if (task.collapsed){
-        if (pos<0)
-          collTasks.push(task.id);
-      } else {
-        if (pos>=0)
-          collTasks.splice(pos,1);
-      }
-    }
-    localStorage.setObject("TWPGanttCollTasks", collTasks);
-  }
-};
-
 
 
 GanttMaster.prototype.updateLinks = function (task) {
@@ -1077,8 +1037,6 @@ GanttMaster.prototype.collapseAll = function () {
 
     this.redraw();
 
-    //store collapse statuses
-    this.storeCollapsedTasks();
   }
 };
 
@@ -1108,9 +1066,6 @@ GanttMaster.prototype.expandAll = function () {
 
     this.redraw();
 
-    //store collapse statuses
-    this.storeCollapsedTasks();
-
   }
 };
 
@@ -1127,9 +1082,6 @@ GanttMaster.prototype.collapse = function (task, all) {
 
 
   this.gantt.refreshGantt();
-
-  //store collapse statuses
-  this.storeCollapsedTasks();
 
 };
 
@@ -1148,9 +1100,6 @@ GanttMaster.prototype.expand = function (task,all) {
   }
 
   this.gantt.refreshGantt();
-
-  //store collapse statuses
-  this.storeCollapsedTasks();
 
 };
 
