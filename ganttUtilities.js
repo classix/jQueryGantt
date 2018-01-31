@@ -209,14 +209,14 @@ $.splittify = {
     //override with saved one
     loadPosition();
 
-    var toLeft = $("<div>").addClass("toLeft").html("{").click(function () {splitter.resize(0.001, 300);});
+    /*var toLeft = $("<div>").addClass("toLeft").html("{").click(function () {splitter.resize(0.001, 300);});
     splitterBar.append(toLeft);
 
     var toCenter = $("<div>").addClass("toCenter").html("&#xa9;").click(function () {splitter.resize(50, 300);});
     splitterBar.append(toCenter);
 
     var toRight = $("<div>").addClass("toRight").html("}").click(function () {splitter.resize(99.9999, 300);});
-    splitterBar.append(toRight);
+    splitterBar.append(toRight);*/
 
 
     firstBox.append(first);

@@ -145,16 +145,10 @@ GanttMaster.prototype.init = function (workSpace) {
     self.gantt.zoomGantt(true);
   }).bind("zoomMinus.gantt", function () {
     self.gantt.zoomGantt(false);
-
-  }).bind("openFullEditor.gantt", function () {
-    self.editor.openFullEditor(self.currentTask,false);
-  }).bind("openAssignmentEditor.gantt", function () {
-    self.editor.openFullEditor(self.currentTask,true);
   }).bind("addIssue.gantt", function () {
     self.addIssue();
   }).bind("openExternalEditor.gantt", function () {
     self.openExternalEditor();
-
   }).bind("undo.gantt", function () {
     if (!self.permissions.canWrite)
       return;
@@ -1090,8 +1084,15 @@ GanttMaster.prototype.collapseAll = function () {
 
 GanttMaster.prototype.fullScreen = function () {
   //console.debug("fullScreen");
-  this.workSpace.toggleClass("ganttFullScreen").resize();
-  $("#fullscrbtn .teamworkIcon").html(this.workSpace.is(".ganttFullScreen")?"€":"@");
+  if (window.frameElement) {
+    if (this.workSpace.is(".ganttFullScreen")) {
+      $(window.frameElement).css({ position: "", top: "", left: "", bottom: "", right: "", margin: "", zIndex: "", backgroundColor: "", width: "", height: ""});
+    } else {
+      $(window.frameElement).css({ position: "fixed", top:0, left:0, bottom:0, right: 0, margin: "auto", zIndex: 1000, backgroundColor: "#fff", width: "100%", height: "100%" });
+    }
+    this.workSpace.toggleClass("ganttFullScreen").resize();
+    $("#fullscrbtn .teamworkIcon").html(this.workSpace.is(".ganttFullScreen")?"€":"@");
+  }
 };
 
 

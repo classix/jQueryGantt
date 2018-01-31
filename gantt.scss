@@ -1,6 +1,22 @@
+  body {
+    overflow: hidden;
+    background-color: #fff;
+  }
 
-  body{
-    /*overflow: hidden;*/
+  #workSpace {
+    padding: 0px; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    border: 0px;
+    position: relative;
+    margin: 0;
+  }
+
+  .ganttButtonBar h1{
+    color: #000000;
+    font-weight: bold;
+    font-size: 28px;
+    margin-left: 10px;
   }
 
   .TWGanttWorkSpace.ganttFullScreen{
@@ -250,6 +266,12 @@
     width: 100%;
     margin-top: 0;
     height: 45px;
+  }
+
+  .btnSave {
+    float: right;
+    padding: 5px !important;
+    margin: 7px 15px 0px 0px !important;
   }
 
   .dataTable .ganttButtonBar .buttons {

@@ -77,18 +77,6 @@ Task.prototype.clone = function () {
   return ret;
 };
 
-Task.prototype.getAssigsString = function () {
-  var ret = "";
-  for (var i = 0; i < this.assigs.length; i++) {
-    var ass = this.assigs[i];
-    var res = this.master.getResource(ass.resourceId);
-    if (res) {
-      ret = ret + (ret == "" ? "" : ", ") + res.name;
-    }
-  }
-  return ret;
-};
-
 Task.prototype.createAssignment = function (id, resourceId, roleId, effort) {
   var assig = new Assignment(id, resourceId, roleId, effort);
   this.assigs.push(assig);

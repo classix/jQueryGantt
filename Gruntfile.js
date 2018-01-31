@@ -13,13 +13,7 @@ module.exports = function(grunt) {
         build: {
             cwd: 'templates',
             src: '*.html',
-            dest: 'dist/templates.js',
-            options: {
-                htmlmin: {
-                    collapseWhitespace: true,
-                    removeComments: true
-                }
-            }
+            dest: 'dist/templates.js'
         }
       },
       jshint: {
@@ -29,7 +23,7 @@ module.exports = function(grunt) {
                 '-W083':true // functions within loops may lead to misunderstood semantic. 
             },
             expand: true,
-            src: ['ganttUtilities.js', 'ganttTask.js', 'ganttDrawerSVG.js', 'ganttGridEditor.js', 'ganttMaster.js']
+            src: ['mainScript.js', 'ganttUtilities.js', 'ganttTask.js', 'ganttDrawerSVG.js', 'ganttGridEditor.js', 'ganttMaster.js']
         }
       },
       clean: {
@@ -62,7 +56,8 @@ module.exports = function(grunt) {
                 'libs/jquery/dateField/jquery.dateField.js',
                 'libs/jquery/JST/jquery.JST.js',
                 'libs/jquery/svg/jquery.svg.min.js',
-                'libs/jquery/svg/jquery.svgdom.1.8.js'],
+                'libs/jquery/svg/jquery.svgdom.1.8.js',
+                'mainScript.js'],
             dest: 'dist/JQueryGantt.js'
         },
         css: {
