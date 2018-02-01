@@ -264,14 +264,11 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
   //bind dateField on dates
   taskRow.find(".date").each(function () {
     var el = $(this);
-    el.click(function () {
-      var inp = $(this);
-      inp.dateField({
-        inputField: el,
-        callback:   function (d) {
-          $(this).blur();
-        }
-      });
+
+    el.datepicker({
+      onSelect: function (d) {
+        $(this).blur();
+      }
     });
 
     el.blur(function (date) {

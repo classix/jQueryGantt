@@ -53,10 +53,10 @@ module.exports = function(grunt) {
                 'libs/dialogs.js',
                 'libs/layout.js',
                 'libs/i18nJs.js',
-                'libs/jquery/dateField/jquery.dateField.js',
                 'libs/jquery/JST/jquery.JST.js',
                 'libs/jquery/svg/jquery.svg.min.js',
                 'libs/jquery/svg/jquery.svgdom.1.8.js',
+                'libs/datepicker*.js',
                 'mainScript.js'],
             dest: 'dist/JQueryGantt.js'
         },
@@ -64,7 +64,7 @@ module.exports = function(grunt) {
             options: {
                 separator: '\n\n',
             },
-            src: ['dist/*.css', 'libs/jquery/dateField/jquery.dateField.css'],
+            src: ['dist/*.css', 'libs/*.css'],
             dest: 'dist/JQueryGantt.css'
         }
       },
@@ -96,8 +96,8 @@ module.exports = function(grunt) {
         build: {
           files:[
                     {expand: true, cwd: 'res/', src: '**', dest: 'dist/res/'}, 
+                    {expand: true, cwd: 'images/', src: '**', dest: 'dist/images/'}, 
                     {expand: true, cwd: '', src: 'gantt.html', dest: 'dist/'},
-                    {expand: true, cwd: 'libs/jquery/dateField/img/', src: '*', dest: 'dist/img/'}
                 ]
         },
         deploy: {

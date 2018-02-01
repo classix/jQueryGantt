@@ -1,31 +1,31 @@
 <div class="ganttButtonBar noprint">
     <div class="buttons">
-      <button onclick="$('#workSpace').trigger('undo.gantt');return false;" class="button textual icon requireCanWrite" title="(#=GanttMaster.languageItems.BUTTON_UNDO#)"><span class="teamworkIcon">&#39;</span></button>
-      <button onclick="$('#workSpace').trigger('redo.gantt');return false;" class="button textual icon requireCanWrite" title="(#=GanttMaster.languageItems.BUTTON_REDO#)"><span class="teamworkIcon">&middot;</span></button>
+      <button onclick="$('#workSpace').trigger('undo.gantt');return false;" class="button textual icon requireCanWrite" title="(#=GanttMaster.messages.BUTTON_UNDO#)"><span class="teamworkIcon">&#39;</span></button>
+      <button onclick="$('#workSpace').trigger('redo.gantt');return false;" class="button textual icon requireCanWrite" title="(#=GanttMaster.messages.BUTTON_REDO#)"><span class="teamworkIcon">&middot;</span></button>
       <span class="ganttButtonSeparator requireCanWrite requireCanAdd"></span>
-      <button onclick="$('#workSpace').trigger('addAboveCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanAdd" title="(#=GanttMaster.languageItems.BUTTON_INSERT_ABOVE#)"><span class="teamworkIcon">l</span></button>
-      <button onclick="$('#workSpace').trigger('addBelowCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanAdd" title="(#=GanttMaster.languageItems.BUTTON_INSERT_BELOW#)"><span class="teamworkIcon">X</span></button>
+      <button onclick="$('#workSpace').trigger('addAboveCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanAdd" title="(#=GanttMaster.messages.BUTTON_INSERT_ABOVE#)"><span class="teamworkIcon">l</span></button>
+      <button onclick="$('#workSpace').trigger('addBelowCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanAdd" title="(#=GanttMaster.messages.BUTTON_INSERT_BELOW#)"><span class="teamworkIcon">X</span></button>
       <span class="ganttButtonSeparator requireCanWrite requireCanInOutdent"></span>
-      <button onclick="$('#workSpace').trigger('outdentCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanInOutdent" title="(#=GanttMaster.languageItems.BUTTON_UNINDENT_TASK#)"><span class="teamworkIcon">.</span></button>
-      <button onclick="$('#workSpace').trigger('indentCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanInOutdent" title="(#=GanttMaster.languageItems.BUTTON_INDENT_TASK#)"><span class="teamworkIcon">:</span></button>
+      <button onclick="$('#workSpace').trigger('outdentCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanInOutdent" title="(#=GanttMaster.messages.BUTTON_UNINDENT_TASK#)"><span class="teamworkIcon">.</span></button>
+      <button onclick="$('#workSpace').trigger('indentCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanInOutdent" title="(#=GanttMaster.messages.BUTTON_INDENT_TASK#)"><span class="teamworkIcon">:</span></button>
       <span class="ganttButtonSeparator requireCanWrite requireCanMoveUpDown"></span>
-      <button onclick="$('#workSpace').trigger('moveUpCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" title="(#=GanttMaster.languageItems.BUTTON_MOVE_UP#)"><span class="teamworkIcon">k</span></button>
-      <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" title="(#=GanttMaster.languageItems.BUTTON_MOVE_DOWN#)"><span class="teamworkIcon">j</span></button>
+      <button onclick="$('#workSpace').trigger('moveUpCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" title="(#=GanttMaster.messages.BUTTON_MOVE_UP#)"><span class="teamworkIcon">k</span></button>
+      <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" title="(#=GanttMaster.messages.BUTTON_MOVE_DOWN#)"><span class="teamworkIcon">j</span></button>
       <span class="ganttButtonSeparator requireCanDelete"></span>
-      <button onclick="$('#workSpace').trigger('deleteFocused.gantt');return false;" class="button textual icon delete requireCanWrite" title="(#=GanttMaster.languageItems.BUTTON_DELETE#)"><span class="teamworkIcon">&cent;</span></button>
+      <button onclick="$('#workSpace').trigger('deleteFocused.gantt');return false;" class="button textual icon delete requireCanWrite" title="(#=GanttMaster.messages.BUTTON_DELETE#)"><span class="teamworkIcon">&cent;</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="$('#workSpace').trigger('expandAll.gantt');return false;" class="button textual icon " title="(#=GanttMaster.languageItems.BUTTON_EXPAND_ALL#)"><span class="teamworkIcon">6</span></button>
-      <button onclick="$('#workSpace').trigger('collapseAll.gantt'); return false;" class="button textual icon " title="(#=GanttMaster.languageItems.BUTTON_COLLAPSE_ALL#)"><span class="teamworkIcon">5</span></button>
+      <button onclick="$('#workSpace').trigger('expandAll.gantt');return false;" class="button textual icon " title="(#=GanttMaster.messages.BUTTON_EXPAND_ALL#)"><span class="teamworkIcon">6</span></button>
+      <button onclick="$('#workSpace').trigger('collapseAll.gantt'); return false;" class="button textual icon " title="(#=GanttMaster.messages.BUTTON_COLLAPSE_ALL#)"><span class="teamworkIcon">5</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="$('#workSpace').trigger('zoomMinus.gantt'); return false;" class="button textual icon " title="(#=GanttMaster.languageItems.BUTTON_ZOOM_OUT#)"><span class="teamworkIcon">)</span></button>
-      <button onclick="$('#workSpace').trigger('zoomPlus.gantt');return false;" class="button textual icon " title="(#=GanttMaster.languageItems.BUTTON_ZOOM_IN#)"><span class="teamworkIcon">(</span></button>
+      <button onclick="$('#workSpace').trigger('zoomMinus.gantt'); return false;" class="button textual icon " title="(#=GanttMaster.messages.BUTTON_ZOOM_OUT#)"><span class="teamworkIcon">)</span></button>
+      <button onclick="$('#workSpace').trigger('zoomPlus.gantt');return false;" class="button textual icon " title="(#=GanttMaster.messages.BUTTON_ZOOM_IN#)"><span class="teamworkIcon">(</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="ge.gantt.showCriticalPath=!ge.gantt.showCriticalPath; ge.redraw();return false;" class="button textual icon requireCanSeeCriticalPath" title="(#=GanttMaster.languageItems.BUTTON_CRITICAL_PATH#)"><span class="teamworkIcon">&pound;</span></button>
+      <button onclick="ge.gantt.showCriticalPath=!ge.gantt.showCriticalPath; ge.redraw();return false;" class="button textual icon requireCanSeeCriticalPath" title="(#=GanttMaster.messages.BUTTON_CRITICAL_PATH#)"><span class="teamworkIcon">&pound;</span></button>
       <span class="ganttButtonSeparator requireCanSeeCriticalPath"></span>
-      <button onclick="ge.splitter.resize(.1);return false;" class="button textual icon" title="(#=GanttMaster.languageItems.BUTTON_SHOW_ONLY_EDITOR#)" ><span class="teamworkIcon">F</span></button>
-      <button onclick="ge.splitter.resize(50);return false;" class="button textual icon" title="(#=GanttMaster.languageItems.BUTTON_SPLITTER_CENTER#)" ><span class="teamworkIcon">O</span></button>
-      <button onclick="ge.splitter.resize(100);return false;" class="button textual icon" title="(#=GanttMaster.languageItems.BUTTON_SHOW_ONLY_TABLE#)" ><span class="teamworkIcon">R</span></button>
+      <button onclick="ge.splitter.resize(.1);return false;" class="button textual icon" title="(#=GanttMaster.messages.BUTTON_SHOW_ONLY_EDITOR#)" ><span class="teamworkIcon">F</span></button>
+      <button onclick="ge.splitter.resize(50);return false;" class="button textual icon" title="(#=GanttMaster.messages.BUTTON_SPLITTER_CENTER#)" ><span class="teamworkIcon">O</span></button>
+      <button onclick="ge.splitter.resize(100);return false;" class="button textual icon" title="(#=GanttMaster.messages.BUTTON_SHOW_ONLY_TABLE#)" ><span class="teamworkIcon">R</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="$('#workSpace').trigger('fullScreen.gantt');return false;" class="button textual icon" title="(#=GanttMaster.languageItems.BUTTON_FULLSCREEN#)" id="fullscrbtn"><span class="teamworkIcon">@</span></button>
-      <button onclick="saveGantt();" class="button first big btnSave requireWrite" title="(#=GanttMaster.languageItems.BUTTON_SAVE#)">(#=GanttMaster.languageItems.BUTTON_SAVE#)</button>
+      <button onclick="$('#workSpace').trigger('fullScreen.gantt');return false;" class="button textual icon" title="(#=GanttMaster.messages.BUTTON_FULLSCREEN#)" id="fullscrbtn"><span class="teamworkIcon">@</span></button>
+      <button onclick="saveGantt();" class="button first big btnSave requireWrite" title="(#=GanttMaster.messages.BUTTON_SAVE#)">(#=GanttMaster.messages.BUTTON_SAVE#)</button>
     </div></div>
