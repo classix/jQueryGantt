@@ -347,48 +347,6 @@ function registerEvent(eventName,callback) {
   $("body").off(eventName).on(eventName, callback);
 }
 
-
-function openPersistentFile(file) {
-  //console.debug("openPersistentFile",file);
-  var t=window.self;
-  try{
-    if(window.top != window.self)
-      t=window.top;
-  } catch(e) {}
-
-  if (file.mime.indexOf("image") >= 0) {
-    var img = $("<img>").prop("src", file.url).css({position: "absolute", top: "-10000px", left: "-10000px"}).one("load", function () {
-      //console.debug("image loaded");
-      var img = $(this);
-      var w = img.width();
-      var h = img.height();
-      //console.debug("image loaded",w,h);
-      var f=w/h;
-      var ww = $(t).width()*.8;
-      var wh = $(t).height()*.8;
-      if (w>ww){
-        w=ww;
-        h=w/f;
-      }
-      if (h>wh){
-        h=wh;
-        w=h*f;
-      }
-
-      var hasTop=false;
-      img.width(w).height(h).css({position: "static", top: 0, left: 0});
-
-      t.createModalPopup(w+100,h+100).append(img);
-    });
-    t.$("body").append(img);
-  } else if (file.mime.indexOf("pdf") >= 0) {
-    t.openBlackPopup(file.url, $(t).width()*.8, $(t).height()*.8);
-	} else {
-		window.open(file.url + "&TREATASATTACH=yes");
-	}
-}
-
-
 function wrappedEvaluer(toEval){
   eval(toEval);
 }

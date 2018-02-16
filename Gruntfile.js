@@ -23,7 +23,7 @@ module.exports = function(grunt) {
                 '-W083':true // functions within loops may lead to misunderstood semantic. 
             },
             expand: true,
-            src: ['mainScript.js', 'ganttUtilities.js', 'ganttTask.js', 'ganttDrawerSVG.js', 'ganttGridEditor.js', 'ganttMaster.js']
+            src: ['scripts/**/*.js']
         }
       },
       clean: {
@@ -38,33 +38,19 @@ module.exports = function(grunt) {
                 separator: '\n\n;\n\n',
             },
             src: ['dist/templates.js', 
-                'libs/jquery-3.3.1.min.js',
-                'libs/jquery-ui.min.js',
-                'ganttUtilities.js', 
-                'ganttTask.js', 
-                'ganttDrawerSVG.js', 
-                'ganttGridEditor.js', 
-                'ganttMaster.js', 
-                'libs/jquery/jquery.livequery.1.1.1.min.js',
-                'libs/jquery/jquery.timers.js',
-                'libs/utilities.js',
-                'libs/forms.js',
-                'libs/date.js',
-                'libs/dialogs.js',
-                'libs/layout.js',
-                'libs/i18nJs.js',
-                'libs/jquery/JST/jquery.JST.js',
-                'libs/jquery/svg/jquery.svg.min.js',
-                'libs/jquery/svg/jquery.svgdom.1.8.js',
-                'libs/datepicker*.js',
-                'mainScript.js'],
+                'libs/jquery/jquery-3.3.1.min.js',
+                'libs/jquery/jquery-ui.min.js',
+                'libs/openlab/**/*.js', 
+                'libs/jquery/jquery_sub/**/*.js', 
+                'libs/jquery/ui_sub/**/*.js',
+                'scripts/**/*.js' ],
             dest: 'dist/JQueryGantt.js'
         },
         css: {
             options: {
                 separator: '\n\n',
             },
-            src: ['dist/*.css', 'libs/*.css'],
+            src: ['dist/*.css', 'libs/**/*.css'],
             dest: 'dist/JQueryGantt.css'
         }
       },
@@ -85,7 +71,7 @@ module.exports = function(grunt) {
         build: {
             files: [{
                 expand: true,
-                cwd: '',
+                cwd: 'style',
                 src: ['*.scss'],
                 dest: 'dist',
                 ext: '.css'

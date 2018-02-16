@@ -40,8 +40,8 @@ var attachMsgListener = function () {
 $(document).ready( function () {
 
   attachMsgListener();
-  // send init message to MorphIT to fetch data
-  var msg = { type: 'fetch_data' };
+  // send init message to MorphIT to inform that the initialization has been done
+  var msg = { type: 'initialize' };
   parent.postMessage(msg, location.origin);
 });
 
