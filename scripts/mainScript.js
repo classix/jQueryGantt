@@ -20,7 +20,7 @@ var receiveMessage = function (event)
       break;
     }
     case "change_locale": {
-      setLocale(event.data.data.locale, event.data.data.langItems);
+      setLocale(event.data.data);
       break;
     }
   }
@@ -45,14 +45,28 @@ $(document).ready( function () {
   parent.postMessage(msg, location.origin);
 });
 
-var setLocale = function (locale, langItems) {
+var setLocale = function (data) {
   
-  $.datepicker.setDefaults($.datepicker.regional[locale]);
-  GanttMaster.messages = langItems;
+  var dpOptions = $.datepicker.regional[data.locale];
+  if (dpOptions) {
+    if (data.locales.defaultFormat) {
+      dpOptions.dateFormat = data.locales.defaultFormat.toLowerCase().replace(/yyyy/g, 'yy');
+    }
+    $.datepicker.setDefaults(dpOptions);
+  }
+  GanttMaster.messages = data.langItems;
+  GanttMaster.locales = data.locales;
 
   if (ganttDataLoaded) {
-    $('.hasDatepicker').datepicker( "option", $.datepicker.regional[locale] );
-    // TODO apply the changes of GanttMaster.messages to the templates and formats.
+    $('.hasDatepicker').datepicker("option", $.datepicker.regional[data.locale]);
+    $('.hasDatepicker').datepicker("option", "dateFormat", GanttMaster.locales.defaultFormat.toLowerCase().replace(/yyyy/g, 'yy'));
+
+    // TODO: update holidays
+
+    // update the texts
+    $.JST.updateTexts($("#workSpace"));
+    // update the time table (Ganttalendar)
+    $('#workSpace').trigger('refresh.gantt');
   }
 };
 
@@ -60,7 +74,7 @@ var loadGantt = function (data) {
 
   var project = data.data;
 
-  setLocale(data.options.locale, data.options.langItems);
+  setLocale(data.options);
 
   if (ganttDataLoaded) {
     ge.reset();
@@ -88,5 +102,5 @@ var loadGantt = function (data) {
 function saveGantt() {
   var prj = ge.saveProject();
   var msg = { type: 'save_data', data: prj };
-  parent.postMessage(msg, '*');
+  parent.postMessage(msg, location.origin);
 }

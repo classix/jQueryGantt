@@ -14,23 +14,8 @@ Date.$VERSION = 1.02;
 
 // Utility function to append a 0 to single-digit numbers
 Date.LZ = function(x) {return(x<0||x>9?"":"0")+x};
-// Full month names. Change this for local month names
-Date.monthNames = new Array('January','February','March','April','May','June','July','August','September','October','November','December');
-// Month abbreviations. Change this for local month names
-Date.monthAbbreviations = new Array('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec');
 // Full day names. Change this for local month names
-Date.dayNames = new Array('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday');
-// Day abbreviations. Change this for local month names
-Date.dayAbbreviations = new Array('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
-// Used for parsing ambiguous dates like 1/2/2000 - default to preferring 'American' format meaning Jan 2.
-// Set to false to prefer 'European' format meaning Feb 1
-Date.preferAmericanFormat = true;
 
-// Set to 0=SUn for American 1=Mon for european
-Date.firstDayOfWeek = 0;
-
-//default 
-Date.defaultFormat="dd/MM/yyyy";
 
 // If the getFullYear() method is not defined, create it
 if (!Date.prototype.getFullYear) { 
@@ -44,10 +29,10 @@ if (!Date.prototype.getFullYear) {
 Date.parseString = function(val, format,lenient) {
 	// If no format is specified, try a few common formats
 	if (typeof(format)=="undefined" || format==null || format=="") {
-		var generalFormats=new Array(Date.defaultFormat,'y-M-d','MMM d, y','MMM d,y','y-MMM-d','d-MMM-y','MMM d','MMM-d','d-MMM');
+		var generalFormats=new Array(GanttMaster.locales.defaultFormat,'y-M-d','MMM d, y','MMM d,y','y-MMM-d','d-MMM-y','MMM d','MMM-d','d-MMM');
 		var monthFirst=new Array('M/d/y','M-d-y','M.d.y','M/d','M-d');
 		var dateFirst =new Array('d/M/y','d-M-y','d.M.y','d/M','d-M');
-		var checkList=new Array(generalFormats,Date.preferAmericanFormat?monthFirst:dateFirst,Date.preferAmericanFormat?dateFirst:monthFirst);
+		var checkList=new Array(generalFormats,GanttMaster.locales.preferAmericanFormat?monthFirst:dateFirst,GanttMaster.locales.preferAmericanFormat?dateFirst:monthFirst);
 		for (var i=0; i<checkList.length; i++) {
 			var l=checkList[i];
 			for (var j=0; j<l.length; j++) {
@@ -211,7 +196,7 @@ Date.parseString = function(val, format,lenient) {
         //		} else if (token=="MMM" || token=="NNN"){
       } else if (token == "MMM" || token == "MMMM") {
         month = 0;
-        var names = (token == "MMMM" ? (Date.monthNames.concat(Date.monthAbbreviations)) : Date.monthAbbreviations);
+        var names = (token == "MMMM" ? (GanttMaster.locales.monthNames.concat(GanttMaster.locales.monthAbbreviations)) : GanttMaster.locales.monthAbbreviations);
         for (var i = 0; i < names.length; i++) {
           var month_name = names[i];
           if (val.substring(i_val, i_val + month_name.length).toLowerCase() == month_name.toLowerCase()) {
@@ -224,7 +209,7 @@ Date.parseString = function(val, format,lenient) {
           return null;
         }
       } else if (token == "E" || token == "EE" || token == "EEE" || token == "EEEE") {
-        var names = (token == "EEEE" ? Date.dayNames : Date.dayAbbreviations);
+        var names = (token == "EEEE" ? GanttMaster.locales.dayNames : GanttMaster.locales.dayAbbreviations);
         for (var i = 0; i < names.length; i++) {
           var day_name = names[i];
           if (val.substring(i_val, i_val + day_name.length).toLowerCase() == day_name.toLowerCase()) {
@@ -397,7 +382,7 @@ Date.prototype.getWeekNumber = function() {
 // Format a date into a string using a given format string
 Date.prototype.format = function(format) {
   if (!format)
-    format=Date.defaultFormat;
+    format=GanttMaster.locales.defaultFormat;
 	format=format+"";
 	var result="";
 	var i_format=0;
@@ -421,14 +406,14 @@ Date.prototype.format = function(format) {
 	value["yy"]=y.substring(2,4);
 	value["M"]=M;
 	value["MM"]=Date.LZ(M);
-  value["MMM"]=Date.monthAbbreviations[M-1];
-  value["MMMM"]=Date.monthNames[M-1];
+  value["MMM"]=GanttMaster.locales.monthAbbreviations[M-1];
+  value["MMMM"]=GanttMaster.locales.monthNames[M-1];
 	value["d"]=d;
 	value["dd"]=Date.LZ(d);
-	value["E"]=Date.dayAbbreviations[E];
-	value["EE"]=Date.dayAbbreviations[E];
-	value["EEE"]=Date.dayAbbreviations[E];
-	value["EEEE"]=Date.dayNames[E];
+	value["E"]=GanttMaster.locales.dayAbbreviations[E];
+	value["EE"]=GanttMaster.locales.dayAbbreviations[E];
+	value["EEE"]=GanttMaster.locales.dayAbbreviations[E];
+	value["EEEE"]=GanttMaster.locales.dayNames[E];
 	value["H"]=H;
 	value["HH"]=Date.LZ(H);
   value["w"]=w;
@@ -475,22 +460,22 @@ Date.prototype.format = function(format) {
 
 // Get the full name of the day for a date
 Date.prototype.getDayName = function() { 
-	return Date.dayNames[this.getDay()];
+	return GanttMaster.locales.dayNames[this.getDay()];
 };
 
 // Get the abbreviation of the day for a date
 Date.prototype.getDayAbbreviation = function() { 
-	return Date.dayAbbreviations[this.getDay()];
+	return GanttMaster.locales.dayAbbreviations[this.getDay()];
 };
 
 // Get the full name of the month for a date
 Date.prototype.getMonthName = function() {
-	return Date.monthNames[this.getMonth()];
+	return GanttMaster.locales.monthNames[this.getMonth()];
 };
 
 // Get the abbreviation of the month for a date
 Date.prototype.getMonthAbbreviation = function() { 
-	return Date.monthAbbreviations[this.getMonth()];
+	return GanttMaster.locales.monthAbbreviations[this.getMonth()];
 };
 
 // Clear all time information in a date object
@@ -540,7 +525,7 @@ Date.fromInt=function (dateInt){
 
 
 Date.prototype.isHoliday=function(){
-  return isHoliday(this);
+  return GanttMaster.isHoliday(this);
 };
 
 Date.prototype.isToday=function(){
@@ -576,7 +561,7 @@ Date.prototype.distanceInDays= function (toDate){
   nd.setHours(23, 59, 59, 999);
   var end=nd.getTime();
   while (pos.getTime() <= end) {
-    days = days + (isHoliday(pos) ? 0 : 1);
+    days = days + (GanttMaster.isHoliday(pos) ? 0 : 1);
     pos.setDate(pos.getDate() + 1);
   }
   return days;
@@ -592,7 +577,7 @@ Date.prototype.distanceInWorkingDays= function (toDate){
   var nd=new Date(Math.max(this,toDate));
   nd.setHours(12, 0,0, 0);
   while (pos < nd) {
-    days = days + (isHoliday(pos) ? 0 : 1);
+    days = days + (GanttMaster.isHoliday(pos) ? 0 : 1);
     pos.setDate(pos.getDate() + 1);
   }
   days=days*(this>toDate?-1:1);
@@ -603,7 +588,7 @@ Date.prototype.distanceInWorkingDays= function (toDate){
 
 Date.prototype.setFirstDayOfThisWeek= function (firstDayOfWeek){
   if (!firstDayOfWeek)
-    firstDayOfWeek=Date.firstDayOfWeek;
+    firstDayOfWeek=GanttMaster.locales.firstDayOfWeek;
   this.setDate(this.getDate() - this.getDay() +firstDayOfWeek - (this.getDay()==0 && firstDayOfWeek!=0 ?7:0));
   return this;
 };
@@ -647,9 +632,9 @@ function getMillisInDaysHoursMinutes(millis) {
 	// millisInWorkingDay is set on partHeaderFooter
 	var sgn = millis >= 0 ? 1 : -1;
 	millis = Math.abs(millis);
-	var days = Math.floor(millis / millisInWorkingDay);
-	var hour = Math.floor((millis % millisInWorkingDay) / 3600000);
-	var min = Math.floor((millis - days * millisInWorkingDay - hour * 3600000) / 60000);
+	var days = Math.floor(millis / GanttMaster.locales.millisInWorkingDay);
+	var hour = Math.floor((millis % GanttMaster.locales.millisInWorkingDay) / 3600000);
+	var min = Math.floor((millis - days * GanttMaster.locales.millisInWorkingDay - hour * 3600000) / 60000);
 	return (sgn >= 0 ? "" : "-") + (days > 0 ? days + "  " : "") + pad(hour, 1, "0") + ":" + pad(min, 2, "0");
 }
 
@@ -714,13 +699,13 @@ function millisFromString(string, considerWorkingdays) {
 				} catch (e) {
 				}
 				if (i == 1) { // years
-					totMillis = totMillis + number * (considerWorkingdays ? millisInWorkingDay * workingDaysPerWeek * 52 : 3600000 * 24 * 365);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek * 52 : 3600000 * 24 * 365);
 				} else if (i == 2) { // months
-					totMillis = totMillis + number * (considerWorkingdays ? millisInWorkingDay * workingDaysPerWeek * 4 : 3600000 * 24 * 30);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek * 4 : 3600000 * 24 * 30);
 				} else if (i == 3) { // weeks
-					totMillis = totMillis + number * (considerWorkingdays ? millisInWorkingDay * workingDaysPerWeek : 3600000 * 24 * 7);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek : 3600000 * 24 * 7);
 				} else if (i == 4) { // days
-					totMillis = totMillis + number * (considerWorkingdays ? millisInWorkingDay : 3600000 * 24);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay : 3600000 * 24);
 				} else if (i == 5) { // hours
 					totMillis = totMillis + number * 3600000;
 				} else if (i == 6) { // minutes
@@ -774,11 +759,11 @@ function daysFromString(string, considerWorkingdays) {
 				} catch (e) {
 				}
 				if (i == 1) { // years
-					totDays = totDays + number * (considerWorkingdays ? workingDaysPerWeek * 52 : 365);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek * 52 : 365);
 				} else if (i == 2) { // months
-					totDays = totDays + number * (considerWorkingdays ? workingDaysPerWeek * 4 : 30);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek * 4 : 30);
 				} else if (i == 3) { // weeks
-					totDays = totDays + number * (considerWorkingdays ? workingDaysPerWeek : 7);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek : 7);
 				} else if (i == 4) { // days
 					totDays = totDays + number;
 				} else if (i == 5) { // days.minutes

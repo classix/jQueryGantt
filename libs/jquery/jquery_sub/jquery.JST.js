@@ -39,6 +39,24 @@ $.JST = {
       }
   },
 
+  updateTexts: function (element) {
+    var childrenToEdit = element.find('*[data-ml-text]');
+    childrenToEdit.each(function () {
+      var elem = $(this);
+      if (!elem.attr('data-ml-text')) return true;
+      var attrValue = eval(elem.attr('data-ml-text'));
+      var attrs = elem.attr('data-ml-attribute').split(",");
+      for (var i = 0; i < attrs.length; i++) {
+        var attrName = attrs[i];
+        if ($.trim(attrName.toLowerCase()) === "innerhtml") {
+          elem.html(attrValue);
+        } else {
+          elem.attr(attrName, attrValue);
+        }
+      }
+    });
+  },
+
   createFromTemplate: function(jsonData, template, transformToPrintable) {
     var templates = $.JST._templates;
 
@@ -96,6 +114,8 @@ $.JST = {
     var dec = $.JST._decorators[template];
     if (typeof (dec) == "function")
       dec(ret, jsData);
+
+    $.JST.updateTexts(ret);
 
     return ret;
   },

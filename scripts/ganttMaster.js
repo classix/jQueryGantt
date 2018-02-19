@@ -61,7 +61,6 @@ function GanttMaster() {
     cannotCloseTaskIfIssueOpen: false
   };
 
-  this.firstDayOfWeek = Date.firstDayOfWeek;
   this.serverClientTimeOffset = 0;
 
   //this.currentTask; // task currently selected;
@@ -159,6 +158,10 @@ GanttMaster.prototype.init = function (workSpace) {
     self.redo();
   }).bind("resize.gantt", function () {
     self.resize();
+  }).bind("refresh.gantt", function () {
+    // redraws Ganttalendar (the table with the bars and dates)
+    var gantt = self.gantt;
+    gantt.refreshGantt();
   });
 
 
@@ -256,6 +259,43 @@ GanttMaster.messages = {
   "GANTT_SEMESTER_SHORT":                  "GANTT_SEMESTER_SHORT",
   "CANNOT_CLOSE_TASK_IF_OPEN_ISSUE":       "CANNOT_CLOSE_TASK_IF_OPEN_ISSUE",
   "PLEASE_SAVE_PROJECT":                   "PLEASE_SAVE_PROJECT"
+};
+
+GanttMaster.locales = {
+  monthNames: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+  // Month abbreviations. Change this for local month names 
+  monthAbbreviations: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+  // Full day names. Change this for local month names
+  dayNames: ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+  // Day abbreviations. Change this for local month names
+  dayAbbreviations: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+  // Used for parsing ambiguous dates like 1/2/2000 - default to preferring 'American' format meaning Jan 2.
+  // Set to false to prefer 'European' format meaning Feb 1
+  preferAmericanFormat: false,
+  // Set to 0=SUn for American 1=Mon for european
+  firstDayOfWeek: 1,
+  defaultFormat: "M/d/yyyy",
+  millisInWorkingDay: 28800000,
+  workingDaysPerWeek: 5
+};
+
+GanttMaster.isHoliday = function (date) { 
+  var friIsHoly =false; 
+  var satIsHoly =true; 
+  var sunIsHoly =true; 
+
+  var pad = function (val) { 
+    val = "0" + val; 
+    return val.substr(val.length - 2); 
+  }; 
+ 
+  var holidays = "##"; 
+ 
+  var ymd = "#" + date.getFullYear() + "_" + pad(date.getMonth() + 1) + "_" + pad(date.getDate()) + "#"; 
+  var md = "#" + pad(date.getMonth() + 1) + "_" + pad(date.getDate()) + "#"; 
+  var day = date.getDay(); 
+ 
+  return  (day == 5 && friIsHoly) || (day == 6 && satIsHoly) || (day == 0 && sunIsHoly) || holidays.indexOf(ymd) > -1 || holidays.indexOf(md) > -1; 
 };
 
 
