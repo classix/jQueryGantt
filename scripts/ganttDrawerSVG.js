@@ -267,7 +267,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
         var end = new Date(date.getTime());
         end.setDate(end.getDate() + 7);
         var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        var lbl ="<small>"+GanttMaster.messages.WEEK_SHORT.toLowerCase()+"</small> "+ date.format("w");
+        var lbl ="<small>"+GanttMaster.messages.WEEK_SHORT+"</small> "+ date.format("w");
         tr2.append(createHeadCell(lbl, 7, null, periodWidth));
         trBody.append(createBodyCell(7,false));
         date.setDate(date.getDate() + 7);

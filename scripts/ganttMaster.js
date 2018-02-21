@@ -276,26 +276,22 @@ GanttMaster.locales = {
   firstDayOfWeek: 1,
   defaultFormat: "M/d/yyyy",
   millisInWorkingDay: 28800000,
-  workingDaysPerWeek: 5
+  workingDays: [1,2,3,4,5],
+  holidays: []
 };
 
 GanttMaster.isHoliday = function (date) { 
-  var friIsHoly =false; 
-  var satIsHoly =true; 
-  var sunIsHoly =true; 
-
-  var pad = function (val) { 
-    val = "0" + val; 
-    return val.substr(val.length - 2); 
-  }; 
- 
-  var holidays = "##"; 
- 
-  var ymd = "#" + date.getFullYear() + "_" + pad(date.getMonth() + 1) + "_" + pad(date.getDate()) + "#"; 
-  var md = "#" + pad(date.getMonth() + 1) + "_" + pad(date.getDate()) + "#"; 
-  var day = date.getDay(); 
- 
-  return  (day == 5 && friIsHoly) || (day == 6 && satIsHoly) || (day == 0 && sunIsHoly) || holidays.indexOf(ymd) > -1 || holidays.indexOf(md) > -1; 
+  // check working day
+  var isWorkingDay = _.includes(GanttMaster.locales.workingDays, date.getDay());
+  if (!isWorkingDay) return true;
+  
+  // check holiday
+  if (date < GanttMaster.locales.holidaysStartDate || date > GanttMaster.locales.holidaysEndDate) {
+    console.log('Missing holiday infomation');
+  }
+  var clearedDate = date.clearTime().getTime();
+  return GanttMaster.locales.holidays.indexOf(clearedDate) !== -1;
+  
 };
 
 

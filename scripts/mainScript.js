@@ -19,8 +19,12 @@ var receiveMessage = function (event)
       loadGantt(event.data);
       break;
     }
-    case "change_locale": {
+    case "update_locales": {
       setLocale(event.data.data);
+      break;
+    }
+    case "update_holidays": {
+      setHolidays(event.data);
       break;
     }
   }
@@ -54,14 +58,13 @@ var setLocale = function (data) {
     }
     $.datepicker.setDefaults(dpOptions);
   }
-  GanttMaster.messages = data.langItems;
-  GanttMaster.locales = data.locales;
+
+  _.assign(GanttMaster.messages, data.langItems);
+  _.assign(GanttMaster.locales, data.locales);
 
   if (ganttDataLoaded) {
     $('.hasDatepicker').datepicker("option", $.datepicker.regional[data.locale]);
     $('.hasDatepicker').datepicker("option", "dateFormat", GanttMaster.locales.defaultFormat.toLowerCase().replace(/yyyy/g, 'yy'));
-
-    // TODO: update holidays
 
     // update the texts
     $.JST.updateTexts($("#workSpace"));
@@ -70,11 +73,25 @@ var setLocale = function (data) {
   }
 };
 
+var setHolidays = function (data) {
+
+  if (!_.isNil(data.workingDays)) {
+    // Gantt needs at least one working day
+    if (data.workingDays.length) {
+      GanttMaster.locales.workingDays = data.workingDays;
+    } else {
+      console.error('Error: No working days specified at all. The standard will be used');
+    } 
+  }
+
+  GanttMaster.locales.holidays = _.map(data.holidays, function (d) { return Date.parseString(d, GanttMaster.locales.dateFormat).clearTime().getTime(); });
+  GanttMaster.locales.holidaysStartDate = Date.parseString(data.startDate, GanttMaster.locales.dateFormat);
+  GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.dateFormat);
+};
+
 var loadGantt = function (data) {
 
   var project = data.data;
-
-  setLocale(data.options);
 
   if (ganttDataLoaded) {
     ge.reset();
@@ -96,7 +113,6 @@ var loadGantt = function (data) {
   ge.checkpoint(); //empty the undo stack
 
   ganttDataLoaded = true;
-
 };
 
 function saveGantt() {

@@ -699,11 +699,11 @@ function millisFromString(string, considerWorkingdays) {
 				} catch (e) {
 				}
 				if (i == 1) { // years
-					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek * 52 : 3600000 * 24 * 365);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDays.length * 52 : 3600000 * 24 * 365);
 				} else if (i == 2) { // months
-					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek * 4 : 3600000 * 24 * 30);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDays.length * 4 : 3600000 * 24 * 30);
 				} else if (i == 3) { // weeks
-					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDaysPerWeek : 3600000 * 24 * 7);
+					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay * GanttMaster.locales.workingDays.length : 3600000 * 24 * 7);
 				} else if (i == 4) { // days
 					totMillis = totMillis + number * (considerWorkingdays ? GanttMaster.locales.millisInWorkingDay : 3600000 * 24);
 				} else if (i == 5) { // hours
@@ -759,11 +759,11 @@ function daysFromString(string, considerWorkingdays) {
 				} catch (e) {
 				}
 				if (i == 1) { // years
-					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek * 52 : 365);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDays.length * 52 : 365);
 				} else if (i == 2) { // months
-					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek * 4 : 30);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDays.length * 4 : 30);
 				} else if (i == 3) { // weeks
-					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDaysPerWeek : 7);
+					totDays = totDays + number * (considerWorkingdays ? GanttMaster.locales.workingDays.length : 7);
 				} else if (i == 4) { // days
 					totDays = totDays + number;
 				} else if (i == 5) { // days.minutes
