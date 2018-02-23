@@ -279,7 +279,7 @@ $.splittify = {
       var scrollToY = secondBox.scrollTop() - deltaY;
       var scrollToX = firstBox.scrollLeft() - deltaX;
 
-//			console.debug( firstBox.scrollLeft(), Math.abs(deltaX), Math.abs(deltaY));
+      // console.debug( firstBox.scrollLeft(), Math.abs(deltaX), Math.abs(deltaY));
 
       if (deltaY) secondBox.scrollTop(scrollToY);
       if (deltaX) firstBox.scrollLeft(scrollToX);
@@ -305,9 +305,9 @@ $.splittify = {
         var newW = totalW * this.perc / 100;
         newW = newW > this.firstBoxMinWidth ? newW : this.firstBoxMinWidth;
         newW = newW > totalW - splW - splitter.secondBoxMinWidth ? totalW - splW - splitter.secondBoxMinWidth : newW;
-        this.firstBox.animate({width: newW}, animTime, function () {$(this).css("overflow-x", "auto");});
+        this.firstBox.animate({width: newW}, animTime, function () {$(this).css("overflow-x", "scroll");});
         this.splitterBar.animate({left: newW}, animTime);
-        this.secondBox.animate({left: newW + this.splitterBar.width(), width: totalW - newW - splW}, animTime, function () {$(this).css("overflow", "auto");});
+        this.secondBox.animate({left: newW + this.splitterBar.width(), width: totalW - newW - splW}, animTime, function () {$(this).css({"overflow-y": "auto", "overflow-x":"scroll"});});
 
       };
 
