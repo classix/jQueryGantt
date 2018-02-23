@@ -496,7 +496,8 @@ Ganttalendar.prototype.drawTask = function (task) {
 
   task.hasChild = task.isParent();
 
-  var taskBox = $(_createTaskSVG(task, {x:x, y:top+self.taskVertOffset, width:Math.round((task.end - task.start) * self.fx),height:self.taskHeight}));
+  var taskDimensions = {x:x, y:top+self.taskVertOffset, width:Math.round((task.end - task.start) * self.fx),height:self.taskHeight};
+  var taskBox = $(_createTaskSVG(task, taskDimensions));
   task.ganttElement = taskBox;
   if (self.showCriticalPath && task.isCritical)
     taskBox.addClass("critical");
@@ -514,12 +515,15 @@ Ganttalendar.prototype.drawTask = function (task) {
           el.addClass("focused");
         self.resDrop = false; //hack to avoid select
 
-        $("body").off("click.focused").one("click.focused", function () {
-          $(".ganttSVGBox .focused").removeClass("focused");
+        $("body").off("click.focused").one("click.focused", function (e) {
+          if (event.which === 1) { // only left button deselects
+            $(".ganttSVGBox .focused").removeClass("focused");
+          }
         });
 
       }).dblclick(function () {
-        self.master.showTaskEditor($(this).attr("taskid"));
+        //self.master.showTaskEditor($(this).attr("taskid"));
+        //TODO: send event to classix
       }).mouseenter(function () {
         //bring to top
         var el = $(this);
@@ -528,10 +532,16 @@ Ganttalendar.prototype.drawTask = function (task) {
         } else {
           el.addClass("linkOver");
         }
-      }).mouseleave(function () {
+      }).mouseleave(function (e) {
         var el = $(this);
-        el.removeClass("linkOver").find("[class*=linkHandleSVG]").hide();
-
+        var pos = el.position();
+        var dims = el[0].getBBox();
+        // this if statement is required because this event is fired as soon as the pointer hovers a transparent or non-drawn
+        // area, even if the pointer still in the boundaries of the task. 
+        // taskDimensions.height/6 is the half of the radius of the dependencies circles.
+        if (e.clientX < pos.left || e.clientX > (pos.left + dims.width) || e.clientY < (pos.top + taskDimensions.height/6) || e.clientY > (pos.top + dims.height - taskDimensions.height/6)) {
+          el.removeClass("linkOver").find("[class*=linkHandleSVG]").hide();
+        }
       }).mouseup(function (e) {
         $(":focus").blur(); // in order to save grid field when moving task
       }).mousedown(function () {
@@ -569,7 +579,17 @@ Ganttalendar.prototype.drawTask = function (task) {
           var en = Math.round(((parseFloat(taskbox.attr("x")) + parseFloat(taskbox.attr("width"))) / self.fx) + self.startMillis);
           var d = computeStartDate(st).distanceInWorkingDays(computeEndDate(en))+1;
           var text = taskBox.data("textDur");
-          text.attr("x", parseInt(taskbox.attr("x")) + parseInt(taskbox.attr("width")) + 8).html(d);
+          var taskBoxWidth = parseInt(taskbox.attr("width"));
+          text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(d);
+          var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite');
+          var padding = 5;
+          var textWidth = label[0].getBBox().width;
+
+          if (textWidth + 2 * padding <= taskBoxWidth) {
+            label.attr('transform', 'translate(-' + (taskBoxWidth/2 + textWidth/2)  + ',-3)').addClass('taskLabelSVGWhite').removeClass('taskLabelSVG');
+          } else {
+            label.attr('transform', 'translate(20,-3)').addClass('taskLabelSVG').removeClass('taskLabelSVGWhite');
+          }
 
           $("[from=" + task.id + "],[to=" + task.id + "]").trigger("update");
         },
@@ -672,15 +692,7 @@ Ganttalendar.prototype.drawTask = function (task) {
 
     //progress
     if (task.progress > 0) {
-      var progress = svg.rect(taskSvg, 0, "20%", (task.progress > 100 ? 100 : task.progress) + "%", "60%", {rx:"2", ry:"2",fill:"rgba(0,0,0,.4)"});
-      if (dimensions.width > 50) {
-        var textStyle = {fill:"#888", "font-size":"10px",class:"textPerc teamworkIcons",transform:"translate(5)"};
-        if (task.progress > 100)
-          textStyle["font-weight"]="bold";
-        if (task.progress > 90)
-          textStyle.transform = "translate(-40)";
-        svg.text(taskSvg, (task.progress > 90 ? 100 : task.progress) + "%", (self.rowHeight-5)/2, (task.progress>100?"!!! ":"")+ task.progress + "%", textStyle);
-      }
+      var progress = svg.rect(taskSvg, 0, 0, (task.progress > 100 ? 100 : task.progress) + "%", "100%", {rx:"2", ry:"2", fill:"rgba(0,0,0,)"});
     }
 
     if (task.hasChild)
@@ -695,12 +707,21 @@ Ganttalendar.prototype.drawTask = function (task) {
     }
 
     //task label
-    svg.text(taskSvg, "100%", 18, task.name, {class:"taskLabelSVG", transform:"translate(20,-5)"});
+    var textElement = svg.text(taskSvg, "100%", 18, task.name);
+    var padding = 5;
+    var textWidth = textElement.getBBox().width;
+    if (textWidth + 2 * padding <= dimensions.width) {
+      $(textElement).attr('transform', 'translate(-' + (dimensions.width/2 + textWidth/2)  + ',-3)').addClass('taskLabelSVGWhite');
+    } else {
+      $(textElement).attr('transform', 'translate(20,-3)').addClass('taskLabelSVG');
+    }
+
 
     //link tool
     if (task.level>0){
-      svg.circle(taskSvg, "0",  dimensions.height/2,dimensions.height/3, {class:"taskLinkStartSVG linkHandleSVG", transform:"translate("+(-dimensions.height/3+1)+")"});
-      svg.circle(taskSvg, "100%",dimensions.height/2,dimensions.height/3, {class:"taskLinkEndSVG linkHandleSVG", transform:"translate("+(dimensions.height/3-1)+")"});
+      var margin = 4;
+      svg.circle(taskSvg, 0,  dimensions.height/2,dimensions.height/3, {class:"taskLinkStartSVG linkHandleSVG", transform:"translate("+(-dimensions.height/3-margin)+")"});
+      svg.circle(taskSvg, "100%",dimensions.height/2,dimensions.height/3, {class:"taskLinkEndSVG linkHandleSVG", transform:"translate("+(dimensions.height/3+margin)+")"});
     }
     return taskSvg;
   }

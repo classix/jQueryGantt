@@ -573,8 +573,7 @@
   }
 
   .taskBoxSVG .taskLayout{
-    stroke-width:0;
-    stroke:#999;
+    stroke-width:1;
   }
 
   .taskLinkPathSVG{
@@ -616,19 +615,29 @@
   }
 
   .colorByStatus .taskStatusSVG[status=STATUS_ACTIVE]{
-    fill: #3BBF67;
+    stroke: rgb(41, 136, 73) !important;
+    fill: rgba(59, 191, 103, 0.9) !important;
+    stroke-width:1;
   }
   .colorByStatus .taskStatusSVG[status=STATUS_DONE]{
-    fill: #6EBEF4;
+    stroke: rgb(77, 135, 173) !important;
+    fill: rgba(110, 190, 244, 0.9) !important;
+    stroke-width:1;
   }
   .colorByStatus .taskStatusSVG[status=STATUS_FAILED]{
-    fill: #763A96;
+    stroke: rgb(87, 43, 110) !important;
+    fill: rgba(118, 58, 150, 0.9) !important;
+    stroke-width:1;
   }
   .colorByStatus .taskStatusSVG[status=STATUS_SUSPENDED]{
-    fill: #f9c154;
+    stroke: #ad883f !important;
+    fill: rgba(249,194,84, 0.9) !important;
+    stroke-width:1;
   }
   .colorByStatus .taskStatusSVG[status=STATUS_UNDEFINED]{
-    fill: #dededf;
+    stroke: #adadad !important;
+    fill: rgba(222,222,223,0.9) !important;
+    stroke-width:1;
   }
   .colorByStatus .taskStatusSVG[status=STATUS_UNDEFINED] .taskLayout{
     stroke: #ccc;
@@ -651,10 +660,14 @@
 
   .linkHandleSVG{
     display:none;
-    stroke:transparent;
-    stroke-width:5;
-    fill: rgba(47, 151, 198, 0.7);
+    stroke:rgb(146,146,146);
+    stroke-width:1;
+    fill: rgb(240,240,240);
     cursor: pointer;
+  }
+
+  .linkHandleSVG:hover{
+    fill: #fff;
   }
 
   .linkLineSVG{
@@ -680,6 +693,12 @@
     font-size: 12px;
   }
 
+  .taskLabelSVGWhite {
+    stroke: none;
+    fill:#fff;
+    font-size: 12px;
+  }
+
   .critical .taskLinkPathSVG{
     stroke:red;
   }
@@ -694,8 +713,7 @@
   }
 
   .taskBoxSVG.focused .taskLayout{
-    stroke-width:3px;
-    stroke: rgba(47, 151, 198, 0.7);
+    stroke-width:2px;
   }
 
   .taskBoxSVG.critical .taskLayout{
