@@ -277,7 +277,24 @@ GanttMaster.locales = {
   defaultFormat: "M/d/yyyy",
   millisInWorkingDay: 28800000,
   workingDays: [1,2,3,4,5],
-  holidays: []
+  holidays: [],
+  // formats in Ganttalendar ...
+  header_year_format: "yyyy",
+  header_semester_format_begin: "MMMM",
+  header_semester_format_end: "MMMM yyyy",
+  header_semester_format_unit: "MMM",
+  header_quarter_format_begin: "MMMM",
+  header_quarter_format_end: "MMMM yyyy",
+  header_quarter_format_month_unit: "MMMM",
+  header_quarter_format_week_unit: "w",
+  header_month_format: "MMMM yyyy",
+  header_month_format_unit: "d",
+  header_week_format_begin: "d. MMMM",
+  header_week_format_end: "d. MMMM yyyy",
+  header_week_format_unit: "EEEE",
+  header_day_format_begin: "d. MMMM",
+  header_day_format_end: "d. MMMM yyyy",
+  header_day_format_unit: "EEEE"
 };
 
 GanttMaster.isHoliday = function (date) { 
