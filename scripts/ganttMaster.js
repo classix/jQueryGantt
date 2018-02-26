@@ -46,21 +46,6 @@ function GanttMaster() {
 
   this.minRowsInEditor=30; // number of rows always visible in editor
 
-  this.permissions = {
-    canWriteOnParent: true,
-    canWrite: true,
-    canAdd: true,
-    canDelete: true,
-    canInOutdent: true,
-    canMoveUpDown: true,
-    canSeePopEdit: true,
-    canSeeFullEdit: true,
-    canSeeDep: true,
-    canSeeCriticalPath: true,
-    canAddIssue: false,
-    cannotCloseTaskIfIssueOpen: false
-  };
-
   this.serverClientTimeOffset = 0;
 
   //this.currentTask; // task currently selected;
@@ -149,11 +134,11 @@ GanttMaster.prototype.init = function (workSpace) {
   }).bind("openExternalEditor.gantt", function () {
     self.openExternalEditor();
   }).bind("undo.gantt", function () {
-    if (!self.permissions.canWrite)
+    if (!GanttMaster.permissions.canWrite)
       return;
     self.undo();
   }).bind("redo.gantt", function () {
-    if (!self.permissions.canWrite)
+    if (!GanttMaster.permissions.canWrite)
       return;
     self.redo();
   }).bind("resize.gantt", function () {
@@ -297,6 +282,21 @@ GanttMaster.locales = {
   header_day_format_unit: "EEEE"
 };
 
+GanttMaster.permissions = {
+  canWriteOnParent: true,
+  canWrite: true,
+  canAdd: true,
+  canDelete: true,
+  canInOutdent: true,
+  canMoveUpDown: true,
+  canSeePopEdit: true,
+  canSeeFullEdit: true,
+  canSeeDep: true,
+  canSeeCriticalPath: true,
+  canAddIssue: false,
+  cannotCloseTaskIfIssueOpen: false
+};
+
 GanttMaster.isHoliday = function (date) { 
   // check working day
   var isWorkingDay = _.includes(GanttMaster.locales.workingDays, date.getDay());
@@ -350,7 +350,7 @@ GanttMaster.prototype.updateDependsStrings = function () {
 
 GanttMaster.prototype.removeLink = function (fromTask, toTask) {
   //console.debug("removeLink");
-  if (!this.permissions.canWrite || (!fromTask.canWrite && !toTask.canWrite))
+  if (!GanttMaster.permissions.canWrite || (!fromTask.canWrite && !toTask.canWrite))
     return;
 
   this.beginTransaction();
@@ -373,7 +373,7 @@ GanttMaster.prototype.removeLink = function (fromTask, toTask) {
 
 GanttMaster.prototype.removeAllLinks = function (task, openTrans) {
   //console.debug("removeLink");
-  if (!this.permissions.canWrite || (!task.canWrite && !task.canWrite))
+  if (!GanttMaster.permissions.canWrite || (!task.canWrite && !task.canWrite))
     return;
 
   if (openTrans)
@@ -396,7 +396,7 @@ GanttMaster.prototype.removeAllLinks = function (task, openTrans) {
 //------------------------------------  ADD TASK --------------------------------------------
 GanttMaster.prototype.addTask = function (task, row) {
   //console.debug("master.addTask",task,row,this);
-  if (!this.permissions.canWrite || !this.permissions.canAdd )
+  if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd )
     return;
 
   task.master = this; // in order to access controller from task
@@ -457,19 +457,13 @@ GanttMaster.prototype.addTask = function (task, row) {
  * a project contais tasks, resources, roles, and info about permisions
  * @param project
  */
-GanttMaster.prototype.loadProject = function (project) {
+GanttMaster.prototype.loadProject = function (project, keepScroll) {
   //console.debug("loadProject", project)
   this.beginTransaction();
   this.serverClientTimeOffset = typeof project.serverTimeOffset !="undefined"? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
   this.resources = project.resources;
   this.roles = project.roles;
 
-  //permissions from loaded project
-  this.permissions.canWrite = project.canWrite;
-  this.permissions.canWriteOnParent = project.canWriteOnParent;
-  this.permissions.cannotCloseTaskIfIssueOpen = project.cannotCloseTaskIfIssueOpen;
-  this.permissions.canAddIssue = project.canAddIssue;
-  this.permissions.canDelete = project.canDelete;
   //repaint button bar basing on permissions
   this.checkButtonPermissions();
 
@@ -511,7 +505,9 @@ GanttMaster.prototype.loadProject = function (project) {
 
   this.endTransaction();
   var self = this;
-  this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
+  if (!keepScroll) {
+    this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
+  }
 };
 
 
@@ -641,25 +637,25 @@ GanttMaster.prototype.taskIsChanged = function () {
 GanttMaster.prototype.checkButtonPermissions = function () {
   var ganttButtons=this.element.find(".ganttButtonBar");
   //hide buttons basing on permissions
-  if (!this.permissions.canWrite)
+  if (!GanttMaster.permissions.canWrite)
     ganttButtons.find(".requireCanWrite").hide();
 
-  if (!this.permissions.canAdd)
+  if (!GanttMaster.permissions.canAdd)
     ganttButtons.find(".requireCanAdd").hide();
 
-  if (!this.permissions.canInOutdent)
+  if (!GanttMaster.permissions.canInOutdent)
     ganttButtons.find(".requireCanInOutdent").hide();
 
-  if (!this.permissions.canMoveUpDown)
+  if (!GanttMaster.permissions.canMoveUpDown)
     ganttButtons.find(".requireCanMoveUpDown").hide();
 
-  if (!this.permissions.canDelete)
+  if (!GanttMaster.permissions.canDelete)
     ganttButtons.find(".requireCanDelete").hide();
 
-  if (!this.permissions.canSeeCriticalPath)
+  if (!GanttMaster.permissions.canSeeCriticalPath)
     ganttButtons.find(".requireCanSeeCriticalPath").hide();
 
-  if (!this.permissions.canAddIssue)
+  if (!GanttMaster.permissions.canAddIssue)
     ganttButtons.find(".requireCanAddIssue").hide();
 
 };
@@ -726,8 +722,8 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
   if (!forTransaction) {
     ret.resources = this.resources;
     ret.roles = this.roles;
-    ret.canWrite = this.permissions.canWrite;
-    ret.canWriteOnParent = this.permissions.canWriteOnParent;
+    ret.canWrite = GanttMaster.permissions.canWrite;
+    ret.canWriteOnParent = GanttMaster.permissions.canWriteOnParent;
     ret.zoom = this.gantt.zoom;
 
     //mark un-changed task and assignments
@@ -938,7 +934,7 @@ GanttMaster.prototype.moveUpCurrentTask = function () {
   var self = this;
   //console.debug("moveUpCurrentTask",self.currentTask)
   if (self.currentTask) {
-  if (!self.permissions.canWrite  || !self.currentTask.canWrite || !self.permissions.canMoveUpDown )
+  if (!GanttMaster.permissions.canWrite  || !self.currentTask.canWrite || !GanttMaster.permissions.canMoveUpDown )
     return;
 
     self.beginTransaction();
@@ -951,7 +947,7 @@ GanttMaster.prototype.moveDownCurrentTask = function () {
   var self = this;
   //console.debug("moveDownCurrentTask",self.currentTask)
   if (self.currentTask) {
-  if (!self.permissions.canWrite  || !self.currentTask.canWrite || !self.permissions.canMoveUpDown )
+  if (!GanttMaster.permissions.canWrite  || !self.currentTask.canWrite || !GanttMaster.permissions.canMoveUpDown )
     return;
 
     self.beginTransaction();
@@ -963,7 +959,7 @@ GanttMaster.prototype.moveDownCurrentTask = function () {
 GanttMaster.prototype.outdentCurrentTask = function () {
   var self = this;
   if (self.currentTask) {
-  if (!self.permissions.canWrite || !self.currentTask.canWrite  || !self.permissions.canInOutdent)
+  if (!GanttMaster.permissions.canWrite || !self.currentTask.canWrite  || !GanttMaster.permissions.canInOutdent)
     return;
 
     var par = self.currentTask.getParent();
@@ -980,7 +976,7 @@ GanttMaster.prototype.outdentCurrentTask = function () {
 GanttMaster.prototype.indentCurrentTask = function () {
   var self = this;
   if (self.currentTask) {
-  if (!self.permissions.canWrite || !self.currentTask.canWrite|| !self.permissions.canInOutdent)
+  if (!GanttMaster.permissions.canWrite || !self.currentTask.canWrite|| !GanttMaster.permissions.canInOutdent)
     return;
 
     self.beginTransaction();
@@ -991,7 +987,7 @@ GanttMaster.prototype.indentCurrentTask = function () {
 
 GanttMaster.prototype.addBelowCurrentTask = function () {
   var self = this;
-  if (!self.permissions.canWrite|| !self.permissions.canAdd)
+  if (!GanttMaster.permissions.canWrite|| !GanttMaster.permissions.canAdd)
     return;
 
   var factory = new TaskFactory();
@@ -1015,7 +1011,7 @@ GanttMaster.prototype.addBelowCurrentTask = function () {
 
 GanttMaster.prototype.addAboveCurrentTask = function () {
   var self = this;
-  if (!self.permissions.canWrite || !self.permissions.canAdd)
+  if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd)
     return;
   var factory = new TaskFactory();
 
@@ -1044,7 +1040,7 @@ GanttMaster.prototype.addAboveCurrentTask = function () {
 GanttMaster.prototype.deleteCurrentTask = function () {
   //console.debug("deleteCurrentTask",this.currentTask , this.isMultiRoot)
   var self = this;
-  if (!self.currentTask || !self.permissions.canDelete && !self.currentTask.canDelete)
+  if (!self.currentTask || !GanttMaster.permissions.canDelete && !self.currentTask.canDelete)
     return;
   var row = self.currentTask.getRow();
   if (self.currentTask && (row > 0 || self.isMultiRoot || self.currentTask.isNew()) ) {
@@ -1344,7 +1340,7 @@ GanttMaster.prototype.redo = function () {
 GanttMaster.prototype.saveRequired = function () {
   //console.debug("saveRequired")
   //show/hide save button
-  if(this.__undoStack.length>0 && this.permissions.canWrite) {
+  if(this.__undoStack.length>0 && GanttMaster.permissions.canWrite) {
     $("#saveGanttButton").removeClass("disabled");
     $("form[alertOnChange] #Gantt").val(new Date().getTime()); // set a fake variable as dirty
     this.element.trigger("saveRequired.gantt",[true]);

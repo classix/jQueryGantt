@@ -24,7 +24,7 @@ function GridEditor(master) {
   this.master = master; // is the a GantEditor instance
 
   var editorTabel = $.JST.createFromTemplate({}, "TASKSEDITHEAD");
-  if (!master.permissions.canSeeDep)
+  if (!GanttMaster.permissions.canSeeDep)
     editorTabel.find(".requireCanSeeDep").hide();
 
   this.gridified = $.gridify(editorTabel);
@@ -46,7 +46,7 @@ GridEditor.prototype.fillEmptyLines = function () {
   //fill with empty lines
   for (var i = 0; i < rowsToAdd; i++) {
     var emptyRow = $.JST.createFromTemplate({}, "TASKEMPTYROW");
-    if (!master.permissions.canSeeDep)
+    if (!GanttMaster.permissions.canSeeDep)
       emptyRow.find(".requireCanSeeDep").hide();
 
     //click on empty row create a task and fill above
@@ -54,7 +54,7 @@ GridEditor.prototype.fillEmptyLines = function () {
       //console.debug("emptyRow.click")
       var emptyRow = $(this);
       //add on the first empty row only
-      if (!master.permissions.canWrite || !master.permissions.canAdd || emptyRow.prevAll(".emptyRow").length > 0)
+      if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd || emptyRow.prevAll(".emptyRow").length > 0)
         return;
 
       master.beginTransaction();
@@ -94,10 +94,10 @@ GridEditor.prototype.addTask = function (task, row, hideIfParentCollapsed) {
 
   var taskRow = $.JST.createFromTemplate(task, "TASKROW");
 
-  if (!this.master.permissions.canSeeDep)
+  if (!GanttMaster.permissions.canSeeDep)
     taskRow.find(".requireCanSeeDep").hide();
 
-  if (!this.master.permissions.canSeePopEdit)
+  if (!GanttMaster.permissions.canSeePopEdit)
     taskRow.find(".edit .teamworkIcon").hide();
 
   //save row element on task
@@ -151,7 +151,7 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   //console.debug("refreshTaskRow")
   //var profiler = new Profiler("editorRefreshTaskRow");
 
-  var canWrite=this.master.permissions.canWrite && task.canWrite;
+  var canWrite= GanttMaster.permissions.canWrite && task.canWrite;
 
   var row = task.rowElement;
 
@@ -164,7 +164,7 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   row.find("[name=duration]").val(task.duration);
   row.find("[name=progress]").val(task.progress).prop("readonly",!canWrite || task.progressByWorklog==true);
   row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone);
-  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite || task.depends || !task.canWrite  && !this.master.permissions.canWrite ); // called on dates only because for other field is called on focus event
+  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite || task.depends || !task.canWrite  && !GanttMaster.permissions.canWrite ); // called on dates only because for other field is called on focus event
   row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone);
   row.find("[name=end]").val(new Date(task.end).format()).updateOldValue();
   row.find("[name=depends]").val(task.depends);
@@ -202,7 +202,7 @@ GridEditor.prototype.reset = function () {
 
 GridEditor.prototype.bindRowEvents = function (task, taskRow) {
   var self = this;
-  //console.debug("bindRowEvents",this,this.master,this.master.permissions.canWrite, task.canWrite);
+  //console.debug("bindRowEvents",this,this.master,GanttMaster.permissions.canWrite, task.canWrite);
 
   //bind row selection
   taskRow.click(function (event) {
@@ -228,7 +228,7 @@ GridEditor.prototype.bindRowEvents = function (task, taskRow) {
   });
 
 
-  if (this.master.permissions.canWrite && task.canWrite) {
+  if (GanttMaster.permissions.canWrite && task.canWrite) {
     self.bindRowInputEvents(task, taskRow);
 
   } else { //cannot write: disable input
@@ -236,7 +236,7 @@ GridEditor.prototype.bindRowEvents = function (task, taskRow) {
     taskRow.find("input:checkbox,select").prop("disabled", true);
   }
 
-  if (!this.master.permissions.canSeeDep)
+  if (!GanttMaster.permissions.canSeeDep)
     taskRow.find("[name=depends]").attr("readonly", true);
 
   self.bindRowExpandEvents(task, taskRow);

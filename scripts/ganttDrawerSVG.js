@@ -502,7 +502,7 @@ Ganttalendar.prototype.drawTask = function (task) {
   if (self.showCriticalPath && task.isCritical)
     taskBox.addClass("critical");
 
-  if (this.master.permissions.canWrite && task.canWrite) {
+  if (GanttMaster.permissions.canWrite && task.canWrite) {
 
     //bind all events on taskBox
     taskBox
@@ -548,8 +548,8 @@ Ganttalendar.prototype.drawTask = function (task) {
         var task = self.master.getTask($(this).attr("taskid"));
         task.rowElement.click();
       }).dragExtedSVG($(self.svg.root()), {
-        canResize:  this.master.permissions.canWrite && task.canWrite,
-        canDrag:    !task.depends && this.master.permissions.canWrite && task.canWrite,
+        canResize:  GanttMaster.permissions.canWrite && task.canWrite,
+        canDrag:    !task.depends && GanttMaster.permissions.canWrite && task.canWrite,
         startDrag:  function (e) {
           $(".ganttSVGBox .focused").removeClass("focused");
         },
@@ -861,7 +861,7 @@ Ganttalendar.prototype.drawLink = function (from, to, type) {
     link = drawStartToEnd(from, to, peduncolusSize);
   }
 
-  if (this.master.permissions.canWrite && (from.canWrite || to.canWrite)) {
+  if (GanttMaster.permissions.canWrite && (from.canWrite || to.canWrite)) {
     link.click(function (e) {
       var el = $(this);
       e.stopPropagation();// to avoid body remove focused
@@ -924,6 +924,22 @@ Ganttalendar.prototype.redrawTasks = function () {
     this.drawTask(task);
   }
   //prof.stop();
+};
+
+Ganttalendar.prototype.getScrollPos = function () {
+  var par = this.element.parent();
+
+  //try to maintain last scroll
+  var scrollY = par.scrollTop();
+  var scrollX = par.scrollLeft();
+
+  return {scrollX: scrollX, scrollY: scrollY};
+};
+
+Ganttalendar.prototype.setScrollPos = function (scrollX, scrollY) {
+  var par = this.element.parent();
+  par.scrollTop(scrollY);
+  par.scrollLeft(scrollX);
 };
 
 

@@ -27,27 +27,43 @@ var receiveMessage = function (event)
       setHolidays(event.data);
       break;
     }
-  }
-};
-
-var attachMsgListener = function () {
-  window.addEventListener("message", receiveMessage, false);
-
-  if (window.addEventListener) {
-    // For standards-compliant web browsers
-    window.addEventListener("message", receiveMessage, false);
-  } else {
-    window.attachEvent("onmessage", receiveMessage);
+    case "update_permissions": {
+      setPermissions(event.data.data);
+      break;
+    }
   }
 };
 
 $(document).ready( function () {
-
-  attachMsgListener();
+  // attach message event listener
+  window.addEventListener("message", receiveMessage, false);
   // send init message to MorphIT to inform that the initialization has been done
   var msg = { type: 'initialize' };
   parent.postMessage(msg, location.origin);
 });
+
+var setPermissions = function (permissions) {
+  _.assign(GanttMaster.permissions, permissions);
+
+  if (ganttDataLoaded) {
+    var project = ge.saveProject();
+    ge.reset();
+    updateButtonsDisabled();
+    ge.loadProject(project, true);
+    ge.checkpoint(); //empty the undo stack
+  }
+};
+
+var updateButtonsDisabled = function () {
+  var btn = $(".ganttButtonBar button.requireWrite");
+  if (!GanttMaster.permissions.canWrite) {
+    btn.prop("disabled",true);
+  } else {
+    if (btn.prop("disabled")) {
+      btn.prop("disabled",false);
+    }
+  }
+};
 
 var setLocale = function (data) {
   
@@ -96,18 +112,17 @@ var loadGantt = function (data) {
   if (ganttDataLoaded) {
     ge.reset();
   } else {
-    // here starts gantt initialization
-    ge = new GanttMaster();
-    // sets the progress status of a task to 100% when it is marked completed
-    ge.set100OnClose=true;
-    ge.init($("#workSpace"));
+    // here starts gantt initialization 
+    ge = new GanttMaster(); 
+    // sets the progress status of a task to 100% when it is marked completed 
+    ge.set100OnClose=true; 
+    ge.init($("#workSpace")); 
   }
 
   //in order to force compute the best-fitting zoom level
   delete ge.gantt.zoom;
 
-  if (!project.canWrite)
-    $(".ganttButtonBar button.requireWrite").attr("disabled","true");
+  updateButtonsDisabled();
  
   ge.loadProject(project);
   ge.checkpoint(); //empty the undo stack

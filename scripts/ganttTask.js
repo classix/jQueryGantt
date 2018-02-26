@@ -452,7 +452,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
     if (newStatus == "STATUS_DONE") {
 
       // cannot close task if open issues
-      if (task.master.permissions.cannotCloseTaskIfIssueOpen && task.openIssues > 0) {
+      if (task.GanttMaster.permissions.cannotCloseTaskIfIssueOpen && task.openIssues > 0) {
         task.master.setErrorOnTransaction(GanttMaster.messages["CANNOT_CLOSE_TASK_IF_OPEN_ISSUE"] + " \"" + task.name + "\"");
         return false;
       }
