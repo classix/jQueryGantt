@@ -69,6 +69,22 @@ Ganttalendar.prototype.zoomGantt = function (isPlus) {
   }
 };
 
+Ganttalendar.prototype.computeScaleFactor = function (zoom, initialWidth) {
+  var defaultWidths = [100, 200/3, 150, 100, 15, 25, 30, 40, 50, 100];
+  switch(zoom) {
+    case "y": return (initialWidth || defaultWidths[0]) / (3600000 * 24 * 180);
+    case "s": return (initialWidth || defaultWidths[1]) / (3600000 * 24 * 30);
+    case "q2": return (initialWidth || defaultWidths[2]) / (3600000 * 24 * 30);
+    case "q": return (initialWidth || defaultWidths[3]) / (3600000 * 24 * 10);
+    case "m2": return (initialWidth || defaultWidths[4]) / (3600000 * 24);
+    case "m": return (initialWidth || defaultWidths[5]) / (3600000 * 24);
+    case "w3": return (initialWidth || defaultWidths[6]) / (3600000 * 24);
+    case "w2": return (initialWidth || defaultWidths[7]) / (3600000 * 24);
+    case "w": return (initialWidth || defaultWidths[8]) / (3600000 * 24);
+    case "d": return (initialWidth || defaultWidths[9]) / (3600000 * 24);
+  }
+};
+
 
 Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEndMillis) {
   //console.log("Gantt.create " + zoom + " - " + new Date(originalStartmillis) + " - " + new Date(originalEndMillis));
@@ -199,10 +215,9 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
     //this is computed by hand in order to optimize cell size
     var computedTableWidth;
-    var computedScaleX;
+    var computedScaleX = self.computeScaleFactor(zoom);
     // year
     if (zoom == "y") {
-      computedScaleX=100/(3600000 * 24*180); //1 sem= 100px
       iterate(function (date) {
         tr1.append(createHeadCell(date.format(GanttMaster.locales.header_year_format), 2));
         date.setFullYear(date.getFullYear() + 1);
@@ -218,7 +233,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       //semester
     } else if (zoom == "s") {
-      computedScaleX=200/(3600000 * 24*90); //1 quarter= 200px
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setMonth(end.getMonth() + 6);
@@ -237,7 +251,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       //quarter
      } else if (zoom == "q2") {
-      computedScaleX=150/(3600000 * 24*30); //1 month= 150px
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setMonth(end.getMonth() + 3);
@@ -257,7 +270,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       // quarter / week of year
     } else if (zoom == "q") {
-      computedScaleX=300/(3600000 * 24*30); //1 month= 300px
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setMonth(end.getMonth() + 3);
@@ -276,7 +288,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       //month
     } else if (zoom == "m2") {
-      computedScaleX=15/(3600000 * 24); //1 day= 15px
       iterate(function (date) {
         var sm = date.getTime();
         date.setMonth(date.getMonth() + 1);
@@ -294,8 +305,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       });
 
     } else if (zoom == "m") {
-      computedScaleX=25/(3600000 * 24); //1 day= 25px
-
       iterate(function (date) {
         var sm = date.getTime();
         date.setMonth(date.getMonth() + 1);
@@ -314,8 +323,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       //week
     } else if (zoom == "w3") {
-      computedScaleX=30/(3600000 * 24); //1 day= 30px
-
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setDate(end.getDate() + 6);
@@ -332,7 +339,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       });
 
     } else if (zoom == "w2") {
-      computedScaleX=40/(3600000 * 24); //1 day= 40px
+      
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setDate(end.getDate() + 6);
@@ -349,7 +356,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       });
 
     } else if (zoom == "w") {
-      computedScaleX=50/(3600000 * 24);//1 day= 50px
+      
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setDate(end.getDate() + 6);
@@ -366,7 +373,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
       //days
     } else if (zoom == "d") {
-      computedScaleX=100/(3600000 * 24);//1 day= 100px
+      
       iterate(function (date) {
         var end = new Date(date.getTime());
         end.setDate(end.getDate() + 6);
@@ -444,7 +451,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 
         // drawTodayLine
         if (new Date().getTime() > self.startMillis && new Date().getTime() < self.endMillis) {
-          var x = Math.round(((new Date().getTime()) - self.startMillis) * self.fx);
+          var x = Math.round(((new Date().clearTime().getTime()) - self.startMillis) * self.fx);
           svg.line(gridGroup, x, 0, x, "100%", {class:"ganttTodaySVG"});
         }
 
@@ -471,7 +478,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
   self.originalEndMillis = originalEndMillis;
 
   var table = createGantt(zoom, period.start, period.end);
-
 
   //prof.stop();
   return table;
@@ -516,7 +522,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         self.resDrop = false; //hack to avoid select
 
         $("body").off("click.focused").one("click.focused", function (e) {
-          if (event.which === 1) { // only left button deselects
+          if (e.which === 1) { // only left button deselects
             $(".ganttSVGBox .focused").removeClass("focused");
           }
         });
@@ -967,6 +973,10 @@ Ganttalendar.prototype.refreshGantt = function () {
   var domEl = this.create(this.zoom, this.originalStartMillis, this.originalEndMillis);
   this.element = domEl;
   par.append(domEl);
+
+  //var computedWidth = par.find('.ganttHead2 th').first().outerWidth();
+  //this.fx = this.computeScaleFactor(this.zoom, computedWidth);
+
   this.redrawTasks();
 
   //set old scroll  
