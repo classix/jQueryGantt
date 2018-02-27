@@ -275,7 +275,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       var inp = $(this);
       if (inp.isValueChanged()) {
         if (!Date.isValid(inp.val())) {
-          alert(GanttMaster.messages["INVALID_DATE_FORMAT"]);
+          alert(GanttMaster.messages.INVALID_DATE_FORMAT);
           inp.val(inp.getOldValue());
 
         } else {

@@ -375,7 +375,7 @@ function incrementDateByWorkingDays(date, days) {
 
 function recomputeDuration(start, end) {
   //console.debug("recomputeDuration");
-  return new Date(start).distanceInWorkingDays(new Date(end)) + 1;
+  return new Date(start).distanceInWorkingDays(new Date(end));
 }
 
 

@@ -577,7 +577,7 @@ Ganttalendar.prototype.drawTask = function (task) {
           var taskbox = $(this);
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
           var en = Math.round(((parseFloat(taskbox.attr("x")) + parseFloat(taskbox.attr("width"))) / self.fx) + self.startMillis);
-          var d = computeStartDate(st).distanceInWorkingDays(computeEndDate(en))+1;
+          var d = computeStartDate(st).distanceInWorkingDays(computeEndDate(en));
           var text = taskBox.data("textDur");
           var taskBoxWidth = parseInt(taskbox.attr("width"));
           text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(d);

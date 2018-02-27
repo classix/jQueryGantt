@@ -37,30 +37,13 @@ if (inProduction) {
 // deprecated use $("#domid")...
 function obj(element) {
 	if (arguments.length > 1) {
-		alert("invalid use of obj with multiple params:" + element)
+		alert("invalid use of obj with multiple params:" + element);
 	}
 	var el = document.getElementById(element);
 	if (!el)
 		console.error("element not found: " + element);
 	return el;
 }
-
-if (!window.console) {
-	window.console = new function () {
-		this.log = function (str) {/*alert(str)*/};
-		this.debug = function (str) {/*alert(str)*/};
-		this.error = function (str) {/*alert(str)*/};
-	};
-}
-if (!window.console.debug || !window.console.error || !window.console.log) {
-	window.console = new function () {
-		this.log = function (str) {/*alert(str)*/};
-		this.debug = function (str) {/*alert(str)*/};
-		this.error = function (str) {/*alert(str)*/};
-	};
-}
-
-
 
 String.prototype.trim = function () {
 	return this.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1");

@@ -129,10 +129,6 @@ GanttMaster.prototype.init = function (workSpace) {
     self.gantt.zoomGantt(true);
   }).bind("zoomMinus.gantt", function () {
     self.gantt.zoomGantt(false);
-  }).bind("addIssue.gantt", function () {
-    self.addIssue();
-  }).bind("openExternalEditor.gantt", function () {
-    self.openExternalEditor();
   }).bind("undo.gantt", function () {
     if (!GanttMaster.permissions.canWrite)
       return;
@@ -524,8 +520,9 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
     if (!(task instanceof Task)) {
       var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.duration, task.collapsed);
       for (var key in task) {
-        if (key != "end" && key != "start")
+        if (key != "end" && key != "start") {
           t[key] = task[key]; //copy all properties
+        }
       }
       task = t;
     }
@@ -1162,36 +1159,6 @@ GanttMaster.prototype.getCollapsedDescendant = function () {
     if (task.collapsed) collapsedDescendant = collapsedDescendant.concat(task.getDescendant());
   }
   return collapsedDescendant;
-};
-
-
-
-
-GanttMaster.prototype.addIssue = function () {
-  var self = this;
-
-  if (self.currentTask && self.currentTask.isNew()){
-    alert(GanttMaster.messages.PLEASE_SAVE_PROJECT);
-    return;
-  }
-  if (!self.currentTask || !self.currentTask.canAddIssue)
-    return;
-
-  openIssueEditorInBlack('0',"AD","ISSUE_TASK="+self.currentTask.id);
-};
-
-GanttMaster.prototype.openExternalEditor = function () {
-  //console.debug("openExternalEditor ")
-  var self = this;
-  if (!self.currentTask)
-    return;
-
-  if (self.currentTask.isNew()){
-    alert(GanttMaster.messages.PLEASE_SAVE_PROJECT);
-    return;
-  }
-
-  //window.location.href=contextPath+"/applications/teamwork/task/taskEditor.jsp?CM=ED&OBJID="+self.currentTask.id;
 };
 
 //<%----------------------------- TRANSACTION MANAGEMENT ---------------------------------%>
