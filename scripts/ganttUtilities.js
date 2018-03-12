@@ -413,7 +413,7 @@ function resynchDates(leavingField, startField, startMilesField, durationField, 
       start = computeStart(date.getTime());
     } else if ("CHANGE_DURATION" == command) {
       //console.debug("CHANGE_DURATION",new Date(start),new Date(end))
-      duration = new Date(start).distanceInWorkingDays(new Date(end)) + 1;
+      duration = new Date(start).distanceInWorkingDays(new Date(end));
     }
 
     startField.val(new Date(start).format());
