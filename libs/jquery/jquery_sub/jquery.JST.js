@@ -85,7 +85,7 @@ $.JST = {
 
     var stripString = "";
     if (typeof(template) == "undefined") {
-      alert("Template is required");
+      showErrorMsg("Template is required");
       stripString = "<div>Template is required</div>";
 
     } else if (typeof(templates[template]) == "function") { // resig template

@@ -4,6 +4,16 @@ var ge;
 var ganttDataLoaded = false;
 
 /**
+ * Sends an error message with an error text to the parent window, so that the parent window can show it 
+ * accordingly to the parent window style
+ * @param {string} text the error message
+ */
+var showErrorMsg = function (text) {
+  var msg = { type: 'error', text: text };
+  parent.postMessage(msg, location.origin);
+};
+
+/**
  * handels the received messages from the WebWidget Wrapper in MorphIT
  */
 var receiveMessage = function (event)
@@ -96,13 +106,13 @@ var setHolidays = function (data) {
     if (data.workingDays.length) {
       GanttMaster.locales.workingDays = data.workingDays;
     } else {
-      console.error('Error: No working days specified at all. The standard will be used');
+      console.warn('Gantt: No working days specified at all. The standard will be used');
     } 
   }
 
-  GanttMaster.locales.holidays = _.map(data.holidays, function (d) { return Date.parseString(d, GanttMaster.locales.dateFormat).clearTime().getTime(); });
-  GanttMaster.locales.holidaysStartDate = Date.parseString(data.startDate, GanttMaster.locales.dateFormat);
-  GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.dateFormat);
+  GanttMaster.locales.holidays = _.map(data.holidays, function (d) { return Date.parseString(d, GanttMaster.locales.defaultFormat).clearTime().getTime(); });
+  GanttMaster.locales.holidaysStartDate = Date.parseString(data.startDate, GanttMaster.locales.defaultFormat);
+  GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.defaultFormat);
 };
 
 var loadGantt = function (data) {

@@ -37,7 +37,7 @@ if (inProduction) {
 // deprecated use $("#domid")...
 function obj(element) {
 	if (arguments.length > 1) {
-		alert("invalid use of obj with multiple params:" + element);
+		showErrorMsg("invalid use of obj with multiple params:" + element);
 	}
 	var el = document.getElementById(element);
 	if (!el)

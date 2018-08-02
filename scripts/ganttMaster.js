@@ -484,9 +484,6 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
     var task = project.tasks[i];
     task.start += this.serverClientTimeOffset;
     task.end += this.serverClientTimeOffset;
-
-    //set initial collapsed status
-    task.collapsed=collTasks.indexOf(task.id)>=0;
   }
 
 
@@ -539,18 +536,18 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
     //add Link collection in memory
     while (!this.updateLinks(task)) {  // error on update links while loading can be considered as "warning". Can be displayed and removed in order to let transaction commits.
       if (this.__currentTransaction && numOfError != this.__currentTransaction.errors.length) {
-        var msg = "ERROR:\n";
+        var msg = "";
         while (numOfError < this.__currentTransaction.errors.length) {
           var err = this.__currentTransaction.errors.pop();
           msg = msg + err.msg + "\n\n";
         }
-        alert(msg);
+        showErrorMsg(msg);
       }
       this.removeAllLinks(task, false);
     }
 
     if (!task.setPeriod(task.start, task.end)) {
-      alert(GanttMaster.messages.GANNT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
+      showErrorMsg(GanttMaster.messages.GANNT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);
     } else {
@@ -1231,12 +1228,12 @@ GanttMaster.prototype.endTransaction = function () {
     //console.debug("rolling-back transaction");
 
     //compose error message
-    var msg = "ERROR:\n";
+    var msg = "";
     for (var j = 0; j < this.__currentTransaction.errors.length; j++) {
       var err = this.__currentTransaction.errors[j];
       msg = msg + err.msg + "\n\n";
     }
-    alert(msg);
+    showErrorMsg(msg);
 
 
     //try to restore changed tasks
@@ -1311,13 +1308,10 @@ GanttMaster.prototype.saveRequired = function () {
     $("#saveGanttButton").removeClass("disabled");
     $("form[alertOnChange] #Gantt").val(new Date().getTime()); // set a fake variable as dirty
     this.element.trigger("saveRequired.gantt",[true]);
-
-
   } else {
     $("#saveGanttButton").addClass("disabled");
     $("form[alertOnChange] #Gantt").updateOldValue(); // set a fake variable as clean
     this.element.trigger("saveRequired.gantt",[false]);
-
   }
 };
 
