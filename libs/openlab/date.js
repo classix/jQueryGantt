@@ -330,6 +330,13 @@ Date.parseString = function(val, format,lenient) {
 
 };
 
+
+Date.prototype.monthDays= function() {
+  var d= new Date(this.getFullYear(), this.getMonth()+1, 0);
+  return d.getDate();
+};
+
+
 // Check if a date string is valid
 Date.isValid = function(val,format,lenient) {
 	return (Date.parseString(val,format,lenient) != null);

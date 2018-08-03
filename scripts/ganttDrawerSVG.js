@@ -176,8 +176,8 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
     return {start:start.getTime(), end:end.getTime()};
   }
 
-  function createHeadCell(lbl, span, additionalClass, width) {
-    var th = $("<th>").html(lbl).attr("colSpan", span);
+  function createHeadCell(lbl, additionalClass, width) {
+    var th = $("<div>").html(lbl);
     if (width)
       th.width(width);
     if (additionalClass)
@@ -185,8 +185,10 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
     return th;
   }
 
-  function createBodyCell(span, isEnd, additionalClass) {
-    var ret = $("<td>").html("").attr("colSpan", span).addClass("ganttBodyCell");
+  function createBodyCell(isEnd, additionalClass, width) {
+    var ret = $("<div>").html("").addClass("ganttBodyCell");
+    if (width)
+      ret.width(width);
     if (isEnd)
       ret.addClass("end");
     if (additionalClass)
@@ -195,199 +197,237 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
   }
 
   function createGantt(zoom, startPeriod, endPeriod) {
-    var tr1 = $("<tr>").addClass("ganttHead1");
-    var tr2 = $("<tr>").addClass("ganttHead2");
-    var trBody = $("<tr>").addClass("ganttBody");
+    var tr1 = $("<div>").addClass("ganttHead1");
+    var tr2 = $("<div>").addClass("ganttHead2");
+    var trBody = $("<div>").addClass("ganttBody");
 
-    function iterate(renderFunction1, renderFunction2) {
-      var start = new Date(startPeriod);
-      //loop for header1
-      while (start.getTime() <= endPeriod) {
-        renderFunction1(start);
-      }
-
-      //loop for header2
-      start = new Date(startPeriod);
-      while (start.getTime() <= endPeriod) {
-        renderFunction2(start);
-      }
-    }
+    var date = new Date(startPeriod);
+    var counter = 0;
+    var totalWidth = 0;
+    var end, periodWidth, tmpDate, lbl;
 
     //this is computed by hand in order to optimize cell size
     var computedTableWidth;
     var computedScaleX = self.computeScaleFactor(zoom);
     // year
     if (zoom == "y") {
-      iterate(function (date) {
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_year_format), 2));
-        date.setFullYear(date.getFullYear() + 1);
-      }, function (date) {
-        var end = new Date(date.getTime());
+      
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setMonth(end.getMonth() + 6);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
         var sem = (Math.floor(date.getMonth() / 6) + 1);
-        tr2.append(createHeadCell(GanttMaster.messages.GANTT_SEMESTER_SHORT + sem, 1, null, periodWidth));
-        trBody.append(createBodyCell(1, sem == 2));
+        tr2.append(createHeadCell(GanttMaster.messages.GANTT_SEMESTER_SHORT + sem, null, periodWidth));
+        trBody.append(createBodyCell(sem == 2, null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 2 === 0) {
+          tr1.append(createHeadCell(date.format(GanttMaster.locales.header_year_format), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setMonth(date.getMonth() + 6);
-      });
+      }
 
       //semester
     } else if (zoom == "s") {
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setMonth(end.getMonth() + 6);
-        end.setDate(end.getDate() - 1);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_semester_format_begin) + " - " + end.format(GanttMaster.locales.header_semester_format_end), 6));
-        date.setMonth(date.getMonth() + 6);
-      }, function (date) {
-        var end = new Date(date.getTime());
-        end.setMonth(end.getMonth() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_semester_format_unit), 1, null, periodWidth));
-        trBody.append(createBodyCell(1, (date.getMonth()+1) % 6 == 0));
-        date.setMonth(date.getMonth() + 1);
-      });
 
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
+        end.setMonth(end.getMonth() + 1);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_semester_format_unit), null, periodWidth));
+        trBody.append(createBodyCell((date.getMonth()+1) % 6 == 0, null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 6 === 0) {
+          tmpDate = new Date(date.getTime());
+          tmpDate.setMonth(tmpDate.getMonth() - 5);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_semester_format_begin) + " - " + date.format(GanttMaster.locales.header_semester_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
+        date.setMonth(date.getMonth() + 1);
+      }
 
       //quarter
      } else if (zoom == "q2") {
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setMonth(end.getMonth() + 3);
-        end.setDate(end.getDate() - 1);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_quarter_format_begin) + " - " + end.format(GanttMaster.locales.header_quarter_format_end), 3));
-        date.setMonth(date.getMonth() + 3);
-      }, function (date) {
-        var end = new Date(date.getTime());
-        end.setMonth(end.getMonth() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
 
-        var lbl = date.format(GanttMaster.locales.header_quarter_format_month_unit);
-        tr2.append(createHeadCell(lbl, 1, null, periodWidth));
-        trBody.append(createBodyCell(1, date.getMonth() % 3 == 2));
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
+        end.setMonth(end.getMonth() + 1);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_quarter_format_month_unit), null, periodWidth));
+        trBody.append(createBodyCell(date.getMonth() % 3 == 2, null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 3 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setMonth(tmpDate.getMonth() - 2);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_quarter_format_begin) + " - " + date.format(GanttMaster.locales.header_quarter_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setMonth(date.getMonth() + 1);
-      });
+      }
 
       // quarter / week of year
     } else if (zoom == "q") {
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setMonth(end.getMonth() + 3);
-        end.setDate(end.getDate() - 1);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_quarter_format_begin) + " - " + end.format(GanttMaster.locales.header_quarter_format_end), Math.round((end.getTime()-date.getTime())/(3600000*24))));
-        date.setMonth(date.getMonth() + 3);
-      }, function (date) {
-        var end = new Date(date.getTime());
+
+      counter = 0;
+      date = new Date(startPeriod);
+      periodWidth = (7 * 24 * 3600 * 1000) * computedScaleX;
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setDate(end.getDate() + 7);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        var lbl ="<small>"+GanttMaster.messages.WEEK_SHORT+"</small> "+ date.format(GanttMaster.locales.header_quarter_format_week_unit);
-        tr2.append(createHeadCell(lbl, 7, null, periodWidth));
-        trBody.append(createBodyCell(7,false));
+        lbl ="<small>"+GanttMaster.messages.WEEK_SHORT+"</small> "+ date.format(GanttMaster.locales.header_quarter_format_week_unit);
+        tr2.append(createHeadCell(lbl, null, periodWidth));
+        trBody.append(createBodyCell(false, null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 12 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setDate(tmpDate.getDate() - 12 * 7);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_quarter_format_begin) + " - " + date.format(GanttMaster.locales.header_quarter_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setDate(date.getDate() + 7);
-      });
+      }
 
       //month
     } else if (zoom == "m2") {
-      iterate(function (date) {
-        var sm = date.getTime();
-        date.setMonth(date.getMonth() + 1);
-        var daysInMonth = Math.round((date.getTime() - sm) / (3600000 * 24));
-        tr1.append(createHeadCell(new Date(sm).format(GanttMaster.locales.header_month_format), daysInMonth)); //spans mumber of dayn in the month
-      }, function (date) {
-        var end = new Date(date.getTime());
+
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_month_format_unit), 1, GanttMaster.isHoliday(date) ? "holyH headSmall" : "headSmall", periodWidth));
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_month_format_unit), GanttMaster.isHoliday(date) ? "holyH headSmall" : "headSmall", periodWidth));
         var nd = new Date(date.getTime());
         nd.setDate(date.getDate() + 1);
-        trBody.append(createBodyCell(1, nd.getDate() == 1, GanttMaster.isHoliday(date) ? "holy" : null));
+        trBody.append(createBodyCell(nd.getDate() == 1, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter === date.monthDays()) {
+          tr1.append(createHeadCell(date.format(GanttMaster.locales.header_month_format), null, totalWidth)); 
+          totalWidth = 0;
+          counter = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
     } else if (zoom == "m") {
-      iterate(function (date) {
-        var sm = date.getTime();
-        date.setMonth(date.getMonth() + 1);
-        var daysInMonth = Math.round((date.getTime() - sm) / (3600000 * 24));
-        tr1.append(createHeadCell(new Date(sm).format(GanttMaster.locales.header_month_format), daysInMonth)); //spans mumber of dayn in the month
-      }, function (date) {
-        var end = new Date(date.getTime());
+
+
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_month_format_unit), 1, GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
-        var nd = new Date(date.getTime());
-        nd.setDate(date.getDate() + 1);
-        trBody.append(createBodyCell(1, nd.getDate() == 1, GanttMaster.isHoliday(date) ? "holy" : null));
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_month_format_unit), GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
+        tmpDate = new Date(date.getTime());
+        tmpDate.setDate(date.getDate() + 1);
+        trBody.append(createBodyCell(tmpDate.getDate() == 1, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter === date.monthDays()) {
+          tr1.append(createHeadCell(date.format(GanttMaster.locales.header_month_format), null, totalWidth)); 
+          totalWidth = 0;
+          counter = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
       //week
     } else if (zoom == "w3") {
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 6);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_begin) + " - " + end.format(GanttMaster.locales.header_week_format_end), 7));
-        date.setDate(date.getDate() + 7);
-      }, function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
 
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), 1, GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
-        trBody.append(createBodyCell(1, date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null));
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
+        end.setDate(end.getDate() + 1);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
+        trBody.append(createBodyCell(date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 7 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setDate(tmpDate.getDate() - 6);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_week_format_begin) + " - " + date.format(GanttMaster.locales.header_week_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
     } else if (zoom == "w2") {
-      
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 6);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_begin) + " - " + end.format(GanttMaster.locales.header_week_format_end), 7));
-        date.setDate(date.getDate() + 7);
-      }, function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
 
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), 1, GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
-        trBody.append(createBodyCell(1, date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null));
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
+        end.setDate(end.getDate() + 1);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
+        trBody.append(createBodyCell(date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 7 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setDate(tmpDate.getDate() - 6);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_week_format_begin) + " - " + date.format(GanttMaster.locales.header_week_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
     } else if (zoom == "w") {
-      
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 6);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_begin) + " - " + end.format(GanttMaster.locales.header_week_format_end), 7));
-        date.setDate(date.getDate() + 7);
-      }, function (date) {
-        var end = new Date(date.getTime());
+
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), 1, GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
-        trBody.append(createBodyCell(1, date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null));
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_week_format_unit).substr(0, 1), GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
+        trBody.append(createBodyCell(date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 7 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setDate(tmpDate.getDate() - 6);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_week_format_begin) + " - " + date.format(GanttMaster.locales.header_week_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
       //days
     } else if (zoom == "d") {
       
-      iterate(function (date) {
-        var end = new Date(date.getTime());
-        end.setDate(end.getDate() + 6);
-        tr1.append(createHeadCell(date.format(GanttMaster.locales.header_day_format_begin) + " - " + end.format(GanttMaster.locales.header_day_format_end), 7));
-        date.setDate(date.getDate() + 7);
-      }, function (date) {
-        var end = new Date(date.getTime());
+      counter = 0;
+      date = new Date(startPeriod);
+      while (date.getTime() <= endPeriod) {
+        counter++;
+        end = new Date(date.getTime());
         end.setDate(end.getDate() + 1);
-        var periodWidth=(end.getTime()-date.getTime())*computedScaleX;
-
-        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_day_format_unit), 1, GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
-        trBody.append(createBodyCell(1, date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null));
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        tr2.append(createHeadCell(date.format(GanttMaster.locales.header_day_format_unit), GanttMaster.isHoliday(date) ? "holyH" : null, periodWidth));
+        trBody.append(createBodyCell(date.getDay() % 7 == (GanttMaster.locales.firstDayOfWeek + 6) % 7, GanttMaster.isHoliday(date) ? "holy" : null, periodWidth));
+        totalWidth += periodWidth;
+        if (counter > 0 && counter % 7 === 0) {
+          tmpDate = new Date(date);
+          tmpDate.setDate(tmpDate.getDate() - 6);
+          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_day_format_begin) + " - " + date.format(GanttMaster.locales.header_day_format_end), null, totalWidth));
+          totalWidth = 0;
+        }
         date.setDate(date.getDate() + 1);
-      });
+      }
 
     } else {
       console.error("Wrong level " + zoom);
@@ -399,7 +439,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
     //set a minimal width
     computedTableWidth = Math.max(computedTableWidth, self.minGanttSize);
 
-    var table = $("<table cellspacing=0 cellpadding=0>");
+    var table = $("<div>");
     table.append(tr1).append(tr2);   // removed as on FF there are rounging issues  //.css({width:computedTableWidth});
 
     var head = table.clone().addClass("ganttFixHead");

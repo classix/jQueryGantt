@@ -196,7 +196,7 @@
     background-color: #ffffff;
   }
 
-  .ganttTable td,.ganttTable th{
+  .ganttTable div,.ganttTable div{
     overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
@@ -206,7 +206,7 @@
     height:20px;
   }
 
-  .ganttHead1 th{
+  .ganttHead1 div{
     border-left:1px solid #b0b0b0;
     padding: 0;
     margin: 0;
@@ -217,14 +217,17 @@
     word-break: break-all;
   }
 
-  .ganttHead1 th,
-  .ganttHead2 th{
+  .ganttHead1 div,
+  .ganttHead2 div{
+    display: inline-block;
     white-space: nowrap;
     overflow: hidden;
+    height: 100%;
+    text-align: center;
   }
 
-  .ganttHead2 th{
-    padding: 0;
+  .ganttHead2 div{
+    padding: 3px 0 0 0;
     margin: 0;
     border-left:1px solid #b0b0b0;
     /*border-right: 1px solid #bbb;*/
@@ -232,8 +235,16 @@
     background: #EEEEEE;
   }
 
-  .ganttHead1 th.headSmall,.ganttHead2 th.headSmall{
+  .ganttHead1 div.headSmall,.ganttHead2 div.headSmall{
     font-size: 10px;
+  }
+
+  .ganttBody {
+    height: 100%;
+  }
+
+  .ganttBody > div {
+    display: inline-block;
   }
 
   .ganttToday{
@@ -327,14 +338,19 @@
   }
 
 
-  .ganttTable td.end{
+  .ganttTable div.end{
     border-right: 2px dotted #ddd;
   }
 
-  .ganttHead2 th.holyH{
+  .ganttHead2 div.holyH{
     background-color: #de6e0d;
     color: white;
   }
+
+  .ganttBodyCell {
+    height: 100%;
+  }
+
   .ganttBodyCell.holy{
     background-color: rgba(255, 245, 230, 0.51);
   }
