@@ -271,7 +271,9 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       }
     });
 
-    el.blur(function (date) {
+    el.focus(function (e) {
+      $(this).addClass("editing");
+    }).blur(function (date) {
       var inp = $(this);
       if (inp.isValueChanged()) {
         if (!Date.isValid(inp.val())) {
@@ -293,6 +295,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           inp.updateOldValue(); //in order to avoid multiple call if nothing changed
         }
       }
+      $(this).removeClass("editing");
     });
   });
 
@@ -319,11 +322,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
   });
 
 
-  //binding on blur for task update (date exluded as click on calendar blur and then focus, so will always return false, its called refreshing the task row)
-  taskRow.find("input:text:not(.date)").focus(function () {
-    $(this).updateOldValue();
-
-  }).blur(function (event) {
+  var updateFunction = function (event) {
     var el = $(this);
     var row = el.closest("tr");
     var taskId = row.attr("taskId");
@@ -387,7 +386,6 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       } else if (field == "duration") {
         var dates = resynchDates(el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
         self.master.changeTaskDates(task, dates.start, dates.end);
-
       } else if (field == "name" && el.val() == "") { // remove unfilled task
         par = task.getParent();
         task.deleteTask();
@@ -419,6 +417,24 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         //return false;
       }
 
+    }
+  };
+
+  //binding on blur for task update (date exluded as click on calendar blur and then focus, so will always return false, its called refreshing the task row)
+  taskRow.find("input:text:not(.date)").focus(function () {
+    $(this).addClass("editing");
+    $(this).updateOldValue();
+  }).blur(function (event) {
+    $(this).removeClass("editing");
+    updateFunction.call(this, event);
+  }).keyup(function (event) {
+    var othis = this;
+    if (event.keyCode === 13) {
+      updateFunction.call(othis, event);
+      $(othis).updateOldValue();
+      $(othis).removeClass("editing");
+    } else {
+      $(this).addClass("editing");
     }
   });
 

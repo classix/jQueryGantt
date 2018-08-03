@@ -456,7 +456,7 @@
     width: auto;
   }
 
-  .taskEditRow input:focus{
+  .taskEditRow input.editing{
     font-weight: bold;
   }
 
