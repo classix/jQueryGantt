@@ -546,7 +546,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
       this.removeAllLinks(task, false);
     }
 
-    if (!task.setPeriod(task.start, task.end)) {
+    if (!task.setPeriod(task.start, task.end, true)) {
       showErrorMsg(GanttMaster.messages.GANNT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);

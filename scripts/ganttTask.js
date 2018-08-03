@@ -85,7 +85,7 @@ Task.prototype.createAssignment = function (id, resourceId, roleId, effort) {
 
 
 //<%---------- SET PERIOD ---------------------- --%>
-Task.prototype.setPeriod = function (start, end) {
+Task.prototype.setPeriod = function (start, end, force) {
 
   //console.debug("setPeriod ",this.code,this.name,new Date(start), new Date(end));
   //var profilerSetPer = new Profiler("gt_setPeriodJS");
@@ -111,7 +111,7 @@ Task.prototype.setPeriod = function (start, end) {
   var newDuration = recomputeDuration(start, end);
 
   //if are equals do nothing and return true
-  if ( start == originalPeriod.start && end == originalPeriod.end && newDuration == originalPeriod.duration) {
+  if (!force && start == originalPeriod.start && end == originalPeriod.end && newDuration == originalPeriod.duration) {
     //console.debug("Periods are identical!")
     return true;
   }
