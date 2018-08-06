@@ -277,24 +277,33 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       // quarter / week of year
     } else if (zoom == "q") {
 
-      counter = 0;
       date = new Date(startPeriod);
-      periodWidth = (7 * 24 * 3600 * 1000) * computedScaleX;
+      totalWidth = 0;
       while (date.getTime() <= endPeriod) {
-        counter++;
         end = new Date(date.getTime());
         end.setDate(end.getDate() + 7);
         lbl ="<small>"+GanttMaster.messages.WEEK_SHORT+"</small> "+ date.format(GanttMaster.locales.header_quarter_format_week_unit);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
         tr2.append(createHeadCell(lbl, null, periodWidth));
         trBody.append(createBodyCell(false, null, periodWidth));
-        totalWidth += periodWidth;
-        if (counter > 0 && counter % 12 === 0) {
-          tmpDate = new Date(date);
-          tmpDate.setDate(tmpDate.getDate() - 12 * 7);
-          tr1.append(createHeadCell(tmpDate.format(GanttMaster.locales.header_quarter_format_begin) + " - " + date.format(GanttMaster.locales.header_quarter_format_end), null, totalWidth));
-          totalWidth = 0;
-        }
         date.setDate(date.getDate() + 7);
+      }
+
+      date = new Date(startPeriod);
+      totalWidth = 0;
+      var totalDays = 0;
+      while (date.getTime() <= endPeriod) {
+        end = new Date(date.getTime());
+        end.setDate(end.getDate() + 1);
+        periodWidth=(end.getTime()-date.getTime())*computedScaleX;
+        totalWidth += periodWidth;
+        totalDays++;
+        if (date.getDate() === date.monthDays() || ( (date.getTime() + 24 * 3600 * 1000) > endPeriod)) {
+          tr1.append(createHeadCell((totalDays > 14) ? date.format(GanttMaster.locales.header_month_format) : "", null, totalWidth));
+          totalWidth = 0;
+          totalDays = 0;
+        }
+        date.setDate(date.getDate() + 1);
       }
 
       //month
