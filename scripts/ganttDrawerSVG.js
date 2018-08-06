@@ -563,6 +563,7 @@ Ganttalendar.prototype.drawTask = function (task) {
     taskBox
       .click(function (e) { // manages selection
         e.stopPropagation();// to avoid body remove focused
+        sendClassiXEvent(CLASSIX_EVENT_TYPE.CLICK, $(this).attr("taskid"));
         self.element.find("[class*=focused]").removeClass("focused");
         $(".ganttSVGBox .focused").removeClass("focused");
         var el = $(this);
@@ -577,8 +578,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         });
 
       }).dblclick(function () {
-        //self.master.showTaskEditor($(this).attr("taskid"));
-        //TODO: send event to classix
+        sendClassiXEvent(CLASSIX_EVENT_TYPE.DB_CLICK, $(this).attr("taskid"));
       }).mouseenter(function () {
         //bring to top
         var el = $(this);

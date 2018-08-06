@@ -3,6 +3,11 @@ var ge;
 // tells whether jQueryGantt has been initialised before or not
 var ganttDataLoaded = false;
 
+var CLASSIX_EVENT_TYPE = {
+  CLICK: 1,
+  DB_CLICK: 2
+};
+
 /**
  * Sends an error message with an error text to the parent window, so that the parent window can show it 
  * accordingly to the parent window style
@@ -139,6 +144,24 @@ var loadGantt = function (data) {
 
   ganttDataLoaded = true;
 };
+
+function sendClassiXEvent(eventType, args) {
+  var event_data = {};
+  switch (eventType) {
+    case CLASSIX_EVENT_TYPE.CLICK: {
+      event_data.eventType = "click";
+      event_data.taskId = args;
+      break;
+    }
+    case CLASSIX_EVENT_TYPE.DB_CLICK: {
+      event_data.eventType = "dbclick";
+      event_data.taskId = args;
+      break;
+    }
+  }
+  var msg = { type: 'handle_event', data: event_data };
+  parent.postMessage(msg, location.origin);
+}
 
 function saveGantt() {
   var prj = ge.saveProject();
