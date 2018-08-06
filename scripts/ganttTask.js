@@ -480,7 +480,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
           propagateStatusToChildren(task,newStatus,false);
 
           //set inferiors as active
-          propagateStatusToInferiors( task.getInferiors(), "STATUS_ACTIVE");
+          propagateStatusToInferiors(task.getInferiors(), "STATUS_ACTIVE");
         }
       } else { // una propagazione tenta di chiudere un task fallito
         todoOk = false;
@@ -829,6 +829,8 @@ Task.prototype.indent = function () {
 
     //trick to get parents after indent
     this.level++;
+    var createsNoLoops = this.master.updateLinks(this);
+    if (!createsNoLoops) return;
     var futureParents = this.getParents();
     this.level--;
 
