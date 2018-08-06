@@ -604,7 +604,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         task.rowElement.click();
       }).dragExtedSVG($(self.svg.root()), {
         canResize:  GanttMaster.permissions.canWrite && task.canWrite,
-        canDrag:    !task.depends && GanttMaster.permissions.canWrite && task.canWrite,
+        canDrag:    GanttMaster.permissions.canWrite && task.canWrite,
         startDrag:  function (e) {
           $(".ganttSVGBox .focused").removeClass("focused");
         },
@@ -614,10 +614,26 @@ Ganttalendar.prototype.drawTask = function (task) {
         drop:       function (e) {
           self.resDrop = true; //hack to avoid select
           var taskbox = $(this);
-          var task = self.master.getTask(taskbox.attr("taskid"));
-          var s = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
+          var taskid = taskbox.attr("taskid");
+          var task = self.master.getTask(taskid);
+          var s = Math.round(parseFloat(taskbox.attr("x")) / self.fx + self.startMillis);
           self.master.beginTransaction();
-          self.master.moveTask(task, new Date(s));
+          if (!task.depends) {
+            self.master.moveTask(task, new Date(s));
+          } else {
+            var dependsInp = $(".taskEditRow[taskid="+ taskid + "] input[name=depends]");
+            var oldDepends = dependsInp.val();
+            var days = Math.round((s - task.start) / (24 * 3600 * 1000));
+            var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
+              var parts = _.split(d, ":");
+              parts[1] = parseInt((parts[1] || 0)) + days;
+              if (parts[1] <= 0) parts.splice(1,1);
+              return _.join(parts,":");
+            }), ",");
+            if (newDepends !== oldDepends) {
+              dependsInp.val(newDepends).blur();
+            }
+          }
           self.master.endTransaction();
         },
         startResize:function (e) {
@@ -1085,7 +1101,6 @@ $.fn.dragExtedSVG = function (svg, opt) {
   var options = {
     canDrag:        true,
     canResize:      true,
-    resizeZoneWidth:10,
     minSize:        10,
     startDrag:      function (e) {},
     drag:           function (e) {},
@@ -1114,14 +1129,14 @@ $.fn.dragExtedSVG = function (svg, opt) {
           var x1 = parseFloat(el.find("[class*=taskLayout]").offset().left);
           var x2 = x1 + parseFloat(el.attr("width"));
           var posx = e.pageX;
+          var resizeZoneWidth = Math.min(10, (x2 - x1) / 3);
 
           $("body").unselectable();
-
 
           var one;
 
           //start resize end
-          if (options.canResize && (x2-x1)>3*options.resizeZoneWidth && (posx<=x2 &&  posx >= x2- options.resizeZoneWidth)) {
+          if (options.canResize && (posx<=x2 &&  posx >= x2 - resizeZoneWidth)) {
             //store offset mouse x2
             offsetMouseRect = x2 - e.pageX;
             target.attr("oldw", target.attr("width"));
@@ -1150,7 +1165,7 @@ $.fn.dragExtedSVG = function (svg, opt) {
 
 
           //start resize start
-          } else  if (options.canResize && (x2-x1)>3*options.resizeZoneWidth && (posx>=x1 && posx<=x1+options.resizeZoneWidth)) {
+          } else  if (options.canResize && (posx>=x1 && posx<=x1+resizeZoneWidth)) {
             //store offset mouse x1
             offsetMouseRect = parseFloat(target.attr("x"));
             target.attr("oldw", target.attr("width")); //todo controllare se è ancora usato oldw
@@ -1214,10 +1229,11 @@ $.fn.dragExtedSVG = function (svg, opt) {
           var el = $(this);
           var x1 = el.find("[class*=taskLayout]").offset().left;
           var x2 = x1 + parseFloat(el.attr("width"));
+          var resizeZoneWidth = Math.min(10, (x2 - x1) / 3);
           var posx = e.pageX;
 
           //set cursor handle
-          if (options.canResize && (x2-x1)>3*options.resizeZoneWidth &&((posx<=x2 &&  posx >= x2- options.resizeZoneWidth) || (posx>=x1 && posx<=x1+options.resizeZoneWidth))) {
+          if (options.canResize  &&((posx<=x2 &&  posx >= x2 - resizeZoneWidth) || (posx>=x1 && posx<=x1 + resizeZoneWidth))) {
             el.addClass("deSVGhand");
           } else {
             el.removeClass("deSVGhand");
