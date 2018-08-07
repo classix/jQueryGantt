@@ -363,9 +363,8 @@ Task.prototype.computeStartBySuperiors = function (proposedStart) {
     supEnd=0;
     for (var i = 0; i < sups.length; i++) {
       var link = sups[i];
-      supEnd = Math.max(supEnd, incrementDateByWorkingDays(link.from.end, link.lag));
+      supEnd = Math.max(supEnd, incrementDateByWorkingDays(link.from.end, link.lag + 1));
     }
-    supEnd+=1;
   }
   return computeStart(supEnd);
 };

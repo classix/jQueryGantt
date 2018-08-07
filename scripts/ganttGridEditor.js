@@ -164,7 +164,7 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   row.find("[name=duration]").val(task.duration);
   row.find("[name=progress]").val(task.progress).prop("readonly",!canWrite || task.progressByWorklog==true);
   row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone);
-  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite || task.depends || !task.canWrite  && !GanttMaster.permissions.canWrite ); // called on dates only because for other field is called on focus event
+  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite || !task.canWrite  && !GanttMaster.permissions.canWrite ); // called on dates only because for other field is called on focus event
   row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone);
   row.find("[name=end]").val(new Date(task.end).format()).updateOldValue();
   row.find("[name=depends]").val(task.depends);
@@ -411,7 +411,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         self.fillEmptyLines();
         if (par) self.refreshExpandStatus(par);
         self.master.gantt.synchHighlight();
-      }else {
+      } else {
         el.oneTime(1,"foc",function(){$(this).focus();}); //
         event.preventDefault();
         //return false;

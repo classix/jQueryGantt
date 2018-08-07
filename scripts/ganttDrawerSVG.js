@@ -617,13 +617,17 @@ Ganttalendar.prototype.drawTask = function (task) {
           var taskid = taskbox.attr("taskid");
           var task = self.master.getTask(taskid);
           var s = Math.round(parseFloat(taskbox.attr("x")) / self.fx + self.startMillis);
-          self.master.beginTransaction();
+          
           if (!task.depends) {
+            self.master.beginTransaction();
             self.master.moveTask(task, new Date(s));
+            self.master.endTransaction();
           } else {
             var dependsInp = $(".taskEditRow[taskid="+ taskid + "] input[name=depends]");
             var oldDepends = dependsInp.val();
-            var days = Math.round((s - task.start) / (24 * 3600 * 1000));
+            var days = (new Date(task.start)).distanceInWorkingDays(new Date(s));
+            // this is needed because distanceInWorkingDays returns 1 on same dates
+            days -= (days > 0) ? 1 : -1;  
             var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
               var parts = _.split(d, ":");
               parts[1] = parseInt((parts[1] || 0)) + days;
@@ -631,10 +635,14 @@ Ganttalendar.prototype.drawTask = function (task) {
               return _.join(parts,":");
             }), ",");
             if (newDepends !== oldDepends) {
+              dependsInp.focus();
               dependsInp.val(newDepends).blur();
+            } else {
+              self.master.beginTransaction();
+              self.master.moveTask(task, new Date(task.start));
+              self.master.endTransaction();
             }
           }
-          self.master.endTransaction();
         },
         startResize:function (e) {
           //console.debug("startResize");
