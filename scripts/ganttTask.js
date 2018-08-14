@@ -450,12 +450,6 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
     //STATUS_FAILED -> STATUS_DONE   do nothing if not forced by hand
     if (newStatus == "STATUS_DONE") {
 
-      // cannot close task if open issues
-      if (GanttMaster.permissions.cannotCloseTaskIfIssueOpen && task.openIssues > 0) {
-        task.master.setErrorOnTransaction(GanttMaster.messages["CANNOT_CLOSE_TASK_IF_OPEN_ISSUE"] + " \"" + task.name + "\"");
-        return false;
-      }
-
       if ((manuallyChanged || oldStatus != "STATUS_FAILED")) { //cannot set failed task as closed for cascade - only if changed manually
 
         //can be closed only if superiors are already done

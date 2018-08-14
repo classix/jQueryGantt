@@ -90,15 +90,12 @@ GridEditor.prototype.addTask = function (task, row, hideIfParentCollapsed) {
   //var prof = new Profiler("editorAddTaskHtml");
 
   //remove extisting row
-  this.element.find("[taskId=" + task.id + "]").remove();
+  this.element.find('[taskId="' + task.id + "\"]").remove();
 
   var taskRow = $.JST.createFromTemplate(task, "TASKROW");
 
   if (!GanttMaster.permissions.canSeeDep)
     taskRow.find(".requireCanSeeDep").hide();
-
-  if (!GanttMaster.permissions.canSeePopEdit)
-    taskRow.find(".edit .teamworkIcon").hide();
 
   //save row element on task
   task.rowElement = taskRow;

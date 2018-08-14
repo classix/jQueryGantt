@@ -97,7 +97,6 @@ GanttMaster.prototype.init = function (workSpace) {
     self.redrawTasks();
   }).bind("refreshTask.gantt", function (e, task) {
     self.drawTask(task);
-
   }).bind("deleteFocused.gantt", function (e) {
     //delete task or link?
     var focusedSVGElement=self.gantt.element.find(".focused.focused.linkGroup");
@@ -123,8 +122,6 @@ GanttMaster.prototype.init = function (workSpace) {
     self.expandAll();
   }).bind("fullScreen.gantt", function () {
     self.fullScreen();
-
-
   }).bind("zoomPlus.gantt", function () {
     self.gantt.zoomGantt(true);
   }).bind("zoomMinus.gantt", function () {
@@ -238,7 +235,6 @@ GanttMaster.messages = {
   "INVALID_DATE_FORMAT":                   "INVALID_DATE_FORMAT",
   "GANTT_QUARTER_SHORT":                   "GANTT_QUARTER_SHORT",
   "GANTT_SEMESTER_SHORT":                  "GANTT_SEMESTER_SHORT",
-  "CANNOT_CLOSE_TASK_IF_OPEN_ISSUE":       "CANNOT_CLOSE_TASK_IF_OPEN_ISSUE",
   "PLEASE_SAVE_PROJECT":                   "PLEASE_SAVE_PROJECT"
 };
 
@@ -279,18 +275,13 @@ GanttMaster.locales = {
 };
 
 GanttMaster.permissions = {
-  canWriteOnParent: true,
   canWrite: true,
   canAdd: true,
   canDelete: true,
   canInOutdent: true,
   canMoveUpDown: true,
-  canSeePopEdit: true,
-  canSeeFullEdit: true,
   canSeeDep: true,
-  canSeeCriticalPath: true,
-  canAddIssue: false,
-  cannotCloseTaskIfIssueOpen: false
+  canSeeCriticalPath: true
 };
 
 GanttMaster.isHoliday = function (date) { 
@@ -547,7 +538,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
     }
 
     if (!task.setPeriod(task.start, task.end, true)) {
-      showErrorMsg(GanttMaster.messages.GANNT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
+      showErrorMsg(GanttMaster.messages.GANTT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);
     } else {
@@ -649,9 +640,6 @@ GanttMaster.prototype.checkButtonPermissions = function () {
   if (!GanttMaster.permissions.canSeeCriticalPath)
     ganttButtons.find(".requireCanSeeCriticalPath").hide();
 
-  if (!GanttMaster.permissions.canAddIssue)
-    ganttButtons.find(".requireCanAddIssue").hide();
-
 };
 
 
@@ -717,7 +705,6 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
     ret.resources = this.resources;
     ret.roles = this.roles;
     ret.canWrite = GanttMaster.permissions.canWrite;
-    ret.canWriteOnParent = GanttMaster.permissions.canWriteOnParent;
     ret.zoom = this.gantt.zoom;
 
     //mark un-changed task and assignments

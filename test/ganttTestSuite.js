@@ -36,17 +36,13 @@ function enqueueNewTest() {
       resources:                  [],
       roles:                      [],
       //permessi
-      canWriteOnParent:           true,
       canWrite:                   true,
       canAdd:                     true,
       canInOutdent:               true,
       canMoveUpDown:              true,
-      canSeePopEdit:              true,
-      canSeeFullEdit:             true,
       canSeeDep:                  true,
       canSeeCriticalPath:         true,
-      canAddIssue:                false,
-      cannotCloseTaskIfIssueOpen: false
+      canAddIssue:                false
     };
 
     //si carica il progetto

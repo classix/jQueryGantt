@@ -609,7 +609,7 @@ Ganttalendar.prototype.drawTask = function (task) {
           $(".ganttSVGBox .focused").removeClass("focused");
         },
         drag:       function (e) {
-          $("[from=" + task.id + "],[to=" + task.id + "]").trigger("update");
+          $("[from=\"" + task.id + "\"],[to=\"" + task.id + "\"]").trigger("update");
         },
         drop:       function (e) {
           self.resDrop = true; //hack to avoid select
@@ -623,7 +623,7 @@ Ganttalendar.prototype.drawTask = function (task) {
             self.master.moveTask(task, new Date(s));
             self.master.endTransaction();
           } else {
-            var dependsInp = $(".taskEditRow[taskid="+ taskid + "] input[name=depends]");
+            var dependsInp = $('.taskEditRow[taskid="'+ taskid + '"] input[name=depends]');
             var oldDepends = dependsInp.val();
             var days = (new Date(task.start)).distanceInWorkingDays(new Date(s));
             // this is needed because distanceInWorkingDays returns 1 on same dates
@@ -670,7 +670,7 @@ Ganttalendar.prototype.drawTask = function (task) {
             label.attr('transform', 'translate(20,-3)').addClass('taskLabelSVG').removeClass('taskLabelSVGWhite');
           }
 
-          $("[from=" + task.id + "],[to=" + task.id + "]").trigger("update");
+          $("[from=\"" + task.id + "\"],[to=\"" + task.id + "\"]").trigger("update");
         },
         stopResize: function (e) {
           self.resDrop = true; //hack to avoid select
