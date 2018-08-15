@@ -620,25 +620,31 @@ GanttMaster.prototype.taskIsChanged = function () {
 
 
 GanttMaster.prototype.checkButtonPermissions = function () {
-  var ganttButtons=this.element.find(".ganttButtonBar");
+  var ganttButtons=this.element.parent().find(".ganttButtonBar");
   //hide buttons basing on permissions
-  if (!GanttMaster.permissions.canWrite)
+  if (!GanttMaster.permissions.canWrite) {
     ganttButtons.find(".requireCanWrite").hide();
+  }
 
-  if (!GanttMaster.permissions.canAdd)
+  if (!GanttMaster.permissions.canAdd) {
     ganttButtons.find(".requireCanAdd").hide();
+  }
 
-  if (!GanttMaster.permissions.canInOutdent)
+  if (!GanttMaster.permissions.canInOutdent) {
     ganttButtons.find(".requireCanInOutdent").hide();
+  }
 
-  if (!GanttMaster.permissions.canMoveUpDown)
+  if (!GanttMaster.permissions.canMoveUpDown) {
     ganttButtons.find(".requireCanMoveUpDown").hide();
+  }
 
-  if (!GanttMaster.permissions.canDelete)
+  if (!GanttMaster.permissions.canDelete) {
     ganttButtons.find(".requireCanDelete").hide();
+  }
 
-  if (!GanttMaster.permissions.canSeeCriticalPath)
+  if (!GanttMaster.permissions.canSeeCriticalPath) {
     ganttButtons.find(".requireCanSeeCriticalPath").hide();
+  }
 
 };
 
@@ -1113,6 +1119,43 @@ GanttMaster.prototype.collapse = function (task, all) {
 
   this.gantt.refreshGantt();
 
+};
+
+GanttMaster.prototype.showHideCriticalPath = function () {
+    this.gantt.showCriticalPath = !this.gantt.showCriticalPath;
+    this.redraw();
+    this.element.parent().find(".showCriticalPathButton").toggleClass("redButton");
+};
+
+GanttMaster.prototype.showHideNonCriticalTasks =  function () {
+  var allTasks = this.tasks;
+  if (this.nonCriticalHidden) {
+    // the non critical tasks are hidden, so we want to show all tasks
+    _.each(allTasks, function (task) {
+      if (!task.isCritical) {
+        task.isHidden = false;
+        task.rowElement.show();
+      }
+    });
+  } else { // only show the critical tasks
+    
+    // check if the critical path is shown
+    if (!this.gantt.showCriticalPath) {
+      // show and compute the critical path
+      this.showHideCriticalPath();
+    }
+
+    // now hide all non critical tasks
+    _.each(allTasks, function (task) {
+      if (!task.isCritical) {
+        task.isHidden = true;
+        task.rowElement.hide();
+      }
+    });
+  }
+  this.nonCriticalHidden = !this.nonCriticalHidden;
+  this.gantt.refreshGantt();
+  this.element.parent().find(".onlyCriticalTasksButton").toggleClass("redButton");
 };
 
 

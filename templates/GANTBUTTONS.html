@@ -12,7 +12,7 @@
       <button onclick="$('#workSpace').trigger('moveUpCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" data-ml-text="GanttMaster.messages.BUTTON_MOVE_UP" data-ml-attribute="title"><span class="teamworkIcon">k</span></button>
       <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" data-ml-text="GanttMaster.messages.BUTTON_MOVE_DOWN" data-ml-attribute="title"><span class="teamworkIcon">j</span></button>
       <span class="ganttButtonSeparator requireCanDelete"></span>
-      <button onclick="$('#workSpace').trigger('deleteFocused.gantt');return false;" class="button textual icon delete requireCanWrite" data-ml-text="GanttMaster.messages.BUTTON_DELETE" data-ml-attribute="title"><span class="teamworkIcon">&cent;</span></button>
+      <button onclick="$('#workSpace').trigger('deleteFocused.gantt');return false;" class="button textual icon delete requireCanWrite requireCanDelete" data-ml-text="GanttMaster.messages.BUTTON_DELETE" data-ml-attribute="title"><span class="teamworkIcon">&cent;</span></button>
       <span class="ganttButtonSeparator"></span>
       <button onclick="$('#workSpace').trigger('expandAll.gantt');return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_EXPAND_ALL" data-ml-attribute="title"><span class="teamworkIcon">6</span></button>
       <button onclick="$('#workSpace').trigger('collapseAll.gantt'); return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_COLLAPSE_ALL" data-ml-attribute="title"><span class="teamworkIcon">5</span></button>
@@ -20,7 +20,8 @@
       <button onclick="$('#workSpace').trigger('zoomMinus.gantt'); return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_ZOOM_OUT" data-ml-attribute="title"><span class="teamworkIcon">)</span></button>
       <button onclick="$('#workSpace').trigger('zoomPlus.gantt');return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_ZOOM_IN" data-ml-attribute="title"><span class="teamworkIcon">(</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="ge.gantt.showCriticalPath=!ge.gantt.showCriticalPath; ge.redraw();return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH" data-ml-attribute="title"><span class="teamworkIcon">&pound;</span></button>
+      <button onclick="ge.showHideCriticalPath();return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH" data-ml-attribute="title"><span class="teamworkIcon showCriticalPathButton">&pound;</span></button>
+      <button onclick="ge.showHideNonCriticalTasks();return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH_ONLY" data-ml-attribute="title"><span class="teamworkIcon onlyCriticalTasksButton">8</span></button>
       <span class="ganttButtonSeparator requireCanSeeCriticalPath"></span>
       <button onclick="ge.splitter.resize(.1);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SHOW_ONLY_EDITOR" data-ml-attribute="title"><span class="teamworkIcon">F</span></button>
       <button onclick="ge.splitter.resize(50);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SPLITTER_CENTER" data-ml-attribute="title"><span class="teamworkIcon">O</span></button>

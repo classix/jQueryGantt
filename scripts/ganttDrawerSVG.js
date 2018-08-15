@@ -539,6 +539,7 @@ Ganttalendar.prototype.drawTask = function (task) {
   var self = this;
   //var prof = new Profiler("ganttDrawTask");
   editorRow = task.rowElement;
+  if (!editorRow.is(':visible')) return;
   var top = editorRow.position().top ;// + editorRow.offsetParent().scrollTop();
 
   //var normStart=Math.round(task.start/(3600000*24))*(3600000*24)
@@ -975,13 +976,27 @@ Ganttalendar.prototype.redrawLinks = function () {
 
     //[expand]
     collapsedDescendant = self.master.getCollapsedDescendant();
-    for (var i = 0; i < self.master.links.length; i++) {
-      var link = self.master.links[i];
 
-      if (collapsedDescendant.indexOf(link.from) >= 0 || collapsedDescendant.indexOf(link.to) >= 0) continue;
+    var sortedLinks = self.master.links;
+
+    // sort the links in an order that the critical ones are painted at the end
+    if (self.showCriticalPath && !self.nonCriticalHidden) {
+      sortedLinks = _.sortBy(sortedLinks, function (link) {
+        return link.from.isCritical && link.to.isCritical;
+      });
+    }
+
+    _.each(sortedLinks, function (link) {
+
+      // hide links of hidden tasks
+      if (collapsedDescendant.indexOf(link.from) >= 0 || collapsedDescendant.indexOf(link.to) >= 0) return true;
+      if (self.master.nonCriticalHidden) {
+        if (link.from.isHidden || link.to.isHidden) return true;
+      }
 
       self.drawLink(link.from, link.to);
-    }
+    });
+
     //prof.stop();
   });
 };
