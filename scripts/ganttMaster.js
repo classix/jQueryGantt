@@ -42,6 +42,8 @@ function GanttMaster() {
   this.maxEditableDate = Infinity;
   this.set100OnClose=false;
 
+  this.showSaveButton = false;
+
   this.fillWithEmptyLines=true; //when is used by widget it could be usefull to do not fill with empty lines
 
   this.minRowsInEditor=30; // number of rows always visible in editor
@@ -58,7 +60,6 @@ function GanttMaster() {
 
   var self = this;
 }
-
 
 GanttMaster.prototype.init = function (workSpace) {
   var place=$("<div>").prop("id","TWGanttArea").css( {padding:0, "overflow-y":"auto", "overflow-x":"hidden","border":"1px solid #e5e5e5",position:"relative"});
@@ -90,7 +91,6 @@ GanttMaster.prototype.init = function (workSpace) {
   var ganttButtons = $.JST.createFromTemplate({}, "GANTBUTTONS");
   place.before(ganttButtons);
   this.checkButtonPermissions();
-
 
   //bindings
   workSpace.bind("refreshTasks.gantt", function () {
@@ -451,11 +451,6 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
   this.resources = project.resources;
   this.roles = project.roles;
 
-  //repaint button bar basing on permissions
-  this.checkButtonPermissions();
-
-
-
   if (project.minEditableDate)
     this.minEditableDate = computeStart(project.minEditableDate);
   else
@@ -621,6 +616,10 @@ GanttMaster.prototype.taskIsChanged = function () {
 
 GanttMaster.prototype.checkButtonPermissions = function () {
   var ganttButtons=this.element.parent().find(".ganttButtonBar");
+
+  // show all buttons
+  ganttButtons.find(".requireCanWrite, .requireCanAdd, .requireCanInOutdent, .requireCanMoveUpDown, .requireCanDelete, .requireCanSeeCriticalPath").show();
+
   //hide buttons basing on permissions
   if (!GanttMaster.permissions.canWrite) {
     ganttButtons.find(".requireCanWrite").hide();
@@ -646,6 +645,9 @@ GanttMaster.prototype.checkButtonPermissions = function () {
     ganttButtons.find(".requireCanSeeCriticalPath").hide();
   }
 
+  // show/hide save button
+  ganttButtons.find(".btnSave")[this.showSaveButton?'show':'hide']();
+
 };
 
 
@@ -666,6 +668,8 @@ GanttMaster.prototype.reset = function () {
     this.__inUndoRedo = false;
   }
   delete this.currentTask;
+
+  this.checkButtonPermissions();
 
   this.editor.reset();
   this.gantt.reset();

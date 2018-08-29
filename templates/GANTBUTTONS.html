@@ -11,9 +11,9 @@
       <span class="ganttButtonSeparator requireCanWrite requireCanMoveUpDown"></span>
       <button onclick="$('#workSpace').trigger('moveUpCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" data-ml-text="GanttMaster.messages.BUTTON_MOVE_UP" data-ml-attribute="title"><span class="teamworkIcon">k</span></button>
       <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');return false;" class="button textual icon requireCanWrite requireCanMoveUpDown" data-ml-text="GanttMaster.messages.BUTTON_MOVE_DOWN" data-ml-attribute="title"><span class="teamworkIcon">j</span></button>
-      <span class="ganttButtonSeparator requireCanDelete"></span>
+      <span class="ganttButtonSeparator requireCanDelete requireCanWrite"></span>
       <button onclick="$('#workSpace').trigger('deleteFocused.gantt');return false;" class="button textual icon delete requireCanWrite requireCanDelete" data-ml-text="GanttMaster.messages.BUTTON_DELETE" data-ml-attribute="title"><span class="teamworkIcon">&cent;</span></button>
-      <span class="ganttButtonSeparator"></span>
+      <span class="ganttButtonSeparator requireCanWrite"></span>
       <button onclick="$('#workSpace').trigger('expandAll.gantt');return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_EXPAND_ALL" data-ml-attribute="title"><span class="teamworkIcon">6</span></button>
       <button onclick="$('#workSpace').trigger('collapseAll.gantt'); return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_COLLAPSE_ALL" data-ml-attribute="title"><span class="teamworkIcon">5</span></button>
       <span class="ganttButtonSeparator"></span>
@@ -28,5 +28,5 @@
       <button onclick="ge.splitter.resize(100);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SHOW_ONLY_TABLE" data-ml-attribute="title"><span class="teamworkIcon">R</span></button>
       <span class="ganttButtonSeparator"></span>
       <button onclick="$('#workSpace').trigger('fullScreen.gantt');return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_FULLSCREEN" data-ml-attribute="title" id="fullscrbtn"><span class="teamworkIcon">@</span></button>
-      <button onclick="saveGantt();" class="button first big btnSave requireWrite" data-ml-text="GanttMaster.messages.BUTTON_SAVE" data-ml-attribute="title, innerHTML"></button>
+      <button onclick="saveGantt();" class="button first big btnSave requireWrite" data-ml-text="GanttMaster.messages.BUTTON_SAVE" data-ml-attribute="title, innerHTML" style="display: none;"></button>
     </div></div>

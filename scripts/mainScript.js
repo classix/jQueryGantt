@@ -3,6 +3,8 @@ var ge;
 // tells whether jQueryGantt has been initialised before or not
 var ganttDataLoaded = false;
 
+var ganttOptions = {};
+
 var CLASSIX_EVENT_TYPE = {
   CLICK: 1,
   DB_CLICK: 2
@@ -31,7 +33,12 @@ var receiveMessage = function (event)
 
   switch (event.data.type) {
     case "load_data": {
-      loadGantt(event.data);
+      if (!_.isNil(event.data.options)) {
+        _.merge(ganttOptions, event.data.options);
+      }
+      if (!_.isNil(event.data.project)) {
+        loadGantt(event.data.project);
+      }
       break;
     }
     case "update_locales": {
@@ -45,6 +52,22 @@ var receiveMessage = function (event)
     case "update_permissions": {
       setPermissions(event.data.data);
       break;
+    }
+    case "do_action": {
+      switch(event.data.data.action) {
+        case "toggle_critical_path": {
+          ge.showHideCriticalPath();
+          break;
+        }
+        case "toggle_only_critical": {
+          ge.showHideNonCriticalTasks();
+          break;
+        }
+        case "save_data": {
+          saveGantt();
+          break;
+        }
+      }
     }
   }
 };
@@ -63,20 +86,8 @@ var setPermissions = function (permissions) {
   if (ganttDataLoaded) {
     var project = ge.saveProject();
     ge.reset();
-    updateButtonsDisabled();
     ge.loadProject(project, true);
     ge.checkpoint(); //empty the undo stack
-  }
-};
-
-var updateButtonsDisabled = function () {
-  var btn = $(".ganttButtonBar button.requireWrite");
-  if (!GanttMaster.permissions.canWrite) {
-    btn.prop("disabled",true);
-  } else {
-    if (btn.prop("disabled")) {
-      btn.prop("disabled",false);
-    }
   }
 };
 
@@ -120,26 +131,34 @@ var setHolidays = function (data) {
   GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.defaultFormat);
 };
 
+var applyOptions = function () {
+  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection'];
+  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection'];
+  
+  for (var i = 0; i < originalKeys.length; i++) {
+    var value = ganttOptions[originalKeys[i]];
+    if (!_.isNil(value)) {
+      ge[mapKeys[i]] = value;
+    }
+  }
+};
+
 var loadGantt = function (data) {
 
-  var project = data.data;
-
   if (ganttDataLoaded) {
+    applyOptions();
     ge.reset();
   } else {
     // here starts gantt initialization 
     ge = new GanttMaster(); 
-    // sets the progress status of a task to 100% when it is marked completed 
-    ge.set100OnClose=true; 
+    applyOptions();
     ge.init($("#workSpace")); 
   }
 
   //in order to force compute the best-fitting zoom level
   delete ge.gantt.zoom;
-
-  updateButtonsDisabled();
  
-  ge.loadProject(project);
+  ge.loadProject(data);
   ge.checkpoint(); //empty the undo stack
 
   ganttDataLoaded = true;
