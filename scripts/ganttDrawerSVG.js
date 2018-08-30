@@ -281,7 +281,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       totalWidth = 0;
       while (date.getTime() <= endPeriod) {
         end = new Date(date.getTime());
-        end.setDate(end.getDate() + 7);
+        end.setDate(end.getDate() + Math.min(7, Math.ceil((endPeriod - date.getTime()) / (3600000 * 24))));
         lbl ="<small>"+GanttMaster.messages.WEEK_SHORT+"</small> "+ date.format(GanttMaster.locales.header_quarter_format_week_unit);
         periodWidth=(end.getTime()-date.getTime())*computedScaleX;
         tr2.append(createHeadCell(lbl, null, periodWidth));
