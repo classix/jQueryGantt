@@ -537,6 +537,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
 Ganttalendar.prototype.drawTask = function (task) {
   //console.debug("drawTask", task.name,new Date(task.start));
   var self = this;
+  var backward = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
   //var prof = new Profiler("ganttDrawTask");
   editorRow = task.rowElement;
   if (!editorRow.is(':visible')) return;
@@ -617,31 +618,63 @@ Ganttalendar.prototype.drawTask = function (task) {
           var taskbox = $(this);
           var taskid = taskbox.attr("taskid");
           var task = self.master.getTask(taskid);
+          var taskIndex = self.master.getTaskIndex(task);
           var s = Math.round(parseFloat(taskbox.attr("x")) / self.fx + self.startMillis);
+          if (backward) {
+            s += Math.round(taskbox.children('rect')[0].getBBox().width / self.fx);
+          }
           
-          if (!task.depends) {
+          // avoid computing the inferiors and waste resources if you know you are not in the backward mode
+          var infers = backward ? task.getInferiors() : null;
+
+          if ((!backward && !task.depends) || (backward && !infers.length)) {
             self.master.beginTransaction();
             self.master.moveTask(task, new Date(s));
             self.master.endTransaction();
           } else {
-            var dependsInp = $('.taskEditRow[taskid="'+ taskid + '"] input[name=depends]');
-            var oldDepends = dependsInp.val();
-            var days = (new Date(task.start)).distanceInWorkingDays(new Date(s));
+            var days = (new Date(backward ? task.end : task.start)).distanceInWorkingDays(new Date(s));
             // this is needed because distanceInWorkingDays returns 1 on same dates
-            days -= (days > 0) ? 1 : -1;  
-            var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
-              var parts = _.split(d, ":");
-              parts[1] = parseInt((parts[1] || 0)) + days;
-              if (parts[1] <= 0) parts.splice(1,1);
-              return _.join(parts,":");
-            }), ",");
-            if (newDepends !== oldDepends) {
-              dependsInp.focus();
-              dependsInp.val(newDepends).blur();
+            days -= (days > 0) ? 1 : -1; 
+            if (backward) {
+              _.each(infers, function (link) {
+                var inferTask = link.to;
+                var dependsInp = $('.taskEditRow[taskid="'+ inferTask.id + '"] input[name=depends]');
+                var oldDepends = dependsInp.val();
+                var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
+                  var parts = _.split(d, ":");
+                  if (parseInt(parts[0]) === taskIndex) {
+                    days = -1 * days;
+                    parts[1] = parseInt((parts[1] || 0)) + days;
+                    if (parts[1] <= 0) parts.splice(1,1);
+                  }
+                  return _.join(parts,":");
+                }), ",");
+                if (newDepends !== oldDepends) {
+                  dependsInp.focus();
+                  dependsInp.val(newDepends).blur();
+                } else {
+                  self.master.beginTransaction();
+                  self.master.moveTask(task, new Date(backward ? task.end : task.start));
+                  self.master.endTransaction();
+                } 
+              });
             } else {
-              self.master.beginTransaction();
-              self.master.moveTask(task, new Date(task.start));
-              self.master.endTransaction();
+              var dependsInp = $('.taskEditRow[taskid="'+ taskid + '"] input[name=depends]');
+              var oldDepends = dependsInp.val();
+              var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
+                var parts = _.split(d, ":");
+                parts[1] = parseInt((parts[1] || 0)) + days;
+                if (parts[1] <= 0) parts.splice(1,1);
+                return _.join(parts,":");
+              }), ",");
+              if (newDepends !== oldDepends) {
+                dependsInp.focus();
+                dependsInp.val(newDepends).blur();
+              } else {
+                self.master.beginTransaction();
+                self.master.moveTask(task, new Date(backward ? task.end : task.start));
+                self.master.endTransaction();
+              }
             }
           }
         },
@@ -657,10 +690,10 @@ Ganttalendar.prototype.drawTask = function (task) {
           var taskbox = $(this);
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
           var en = Math.round(((parseFloat(taskbox.attr("x")) + parseFloat(taskbox.attr("width"))) / self.fx) + self.startMillis);
-          var d = computeStartDate(st).distanceInWorkingDays(computeEndDate(en));
+          var d = computeStartDate(st, backward).distanceInWorkingDays(computeEndDate(en, backward));
           var text = taskBox.data("textDur");
           var taskBoxWidth = parseInt(taskbox.attr("width"));
-          text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(d);
+          text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(Math.max(d,1));
           var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite');
           var padding = 5;
           var textWidth = label[0].getBBox().width;

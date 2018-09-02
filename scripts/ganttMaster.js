@@ -20,6 +20,15 @@
  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+var GanttConstants = {
+  SCHEDULE_DIR: {
+    FORWARD: 0,
+    BACKWARD: 1,
+    NO_SCHEDULING: 2
+  }
+};
+
 function GanttMaster() {
   this.tasks = [];
   this.deletedTaskIds = [];
@@ -31,12 +40,10 @@ function GanttMaster() {
 
   this.isMultiRoot=false; // set to true in case of tasklist
 
+  this.schedulingDirection = GanttConstants.SCHEDULE_DIR.FORWARD;
+
   //this.workSpace;  // the original element used for containing everything
   //this.element; // editor and gantt box without buttons
-
-
-  //this.resources; //list of resources
-  //this.roles;  //list of roles
 
   this.minEditableDate = 0;
   this.maxEditableDate = Infinity;
@@ -291,7 +298,7 @@ GanttMaster.isHoliday = function (date) {
   
   // check holiday
   if (date < GanttMaster.locales.holidaysStartDate || date > GanttMaster.locales.holidaysEndDate) {
-    console.log('Missing holiday infomation');
+    console.log('Missing holiday infomation: ' + date);
   }
   var clearedDate = date.clearTime().getTime();
   return GanttMaster.locales.holidays.indexOf(clearedDate) !== -1;
@@ -299,26 +306,10 @@ GanttMaster.isHoliday = function (date) {
 };
 
 
-GanttMaster.prototype.createTask = function (id, name, code, level, start, duration) {
-  var factory = new TaskFactory();
-  return factory.build(id, name, code, level, start, duration);
+GanttMaster.prototype.createTask = function (id, name, code, level, start, end, duration) {
+  var factory = new TaskFactory(this);
+  return factory.build(id, name, code, level, start, end, duration);
 };
-
-
-GanttMaster.prototype.getOrCreateResource = function (id, name) {
-  var res= this.getResource(id);
-  if (!res && id && name) {
-    res = this.createResource(id, name);
-  }
-  return res;
-};
-
-GanttMaster.prototype.createResource = function (id, name) {
-  var res = new Resource(id, name);
-  this.resources.push(res);
-  return res;
-};
-
 
 //update depends strings
 GanttMaster.prototype.updateDependsStrings = function () {
@@ -329,7 +320,6 @@ GanttMaster.prototype.updateDependsStrings = function () {
 
   for (var j = 0; j < this.links.length; j++) {
     var link = this.links[j];
-    var dep = link.to.depends;
     link.to.depends = link.to.depends + (link.to.depends == "" ? "" : ",") + (link.from.getRow() + 1) + (link.lag ? ":" + link.lag : "");
   }
 
@@ -441,23 +431,23 @@ GanttMaster.prototype.addTask = function (task, row) {
 
 
 /**
- * a project contais tasks, resources, roles, and info about permisions
+ * a project contais tasks and info about permisions
  * @param project
  */
 GanttMaster.prototype.loadProject = function (project, keepScroll) {
+
+  var backward = this.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
   //console.debug("loadProject", project)
   this.beginTransaction();
   this.serverClientTimeOffset = typeof project.serverTimeOffset !="undefined"? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
-  this.resources = project.resources;
-  this.roles = project.roles;
 
   if (project.minEditableDate)
-    this.minEditableDate = computeStart(project.minEditableDate);
+    this.minEditableDate = computeStart(project.minEditableDate, backward);
   else
     this.minEditableDate = -Infinity;
 
   if (project.maxEditableDate)
-    this.maxEditableDate = computeEnd(project.maxEditableDate);
+    this.maxEditableDate = computeEnd(project.maxEditableDate, backward);
   else
     this.maxEditableDate = Infinity;
 
@@ -492,7 +482,7 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
 
 GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   //console.debug("GanttMaster.prototype.loadTasks")
-  var factory = new TaskFactory();
+  var factory = new TaskFactory(this);
   //reset
   this.reset();
 
@@ -501,7 +491,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   for (var i = 0; i < tasks.length; i++) {
     task = tasks[i];
     if (!(task instanceof Task)) {
-      var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.duration, task.collapsed);
+      var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.end, task.duration, task.collapsed);
       for (var key in task) {
         if (key != "end" && key != "start") {
           t[key] = task[key]; //copy all properties
@@ -533,7 +523,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
     }
 
     if (!task.setPeriod(task.start, task.end, true)) {
-      showErrorMsg(GanttMaster.messages.GANTT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name );
+      showErrorMsg(GanttMaster.messages.GANTT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name);
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);
     } else {
@@ -567,22 +557,16 @@ GanttMaster.prototype.getTask = function (taskId) {
   return ret;
 };
 
-
-GanttMaster.prototype.getResource = function (resId) {
-  var ret;
-  for (var i = 0; i < this.resources.length; i++) {
-    var res = this.resources[i];
-    if (res.id == resId) {
-      ret = res;
-      break;
-    }
-  }
-  return ret;
+GanttMaster.prototype.getTaskIndex = function (task) {
+  return _.indexOf(this.tasks, task) + 1;
 };
 
-
 GanttMaster.prototype.changeTaskDeps = function (task) {
-  return task.moveTo(task.start);
+  if (this.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD) {
+    return task.moveTo(task.end);
+  } else {
+    return task.moveTo(task.start);
+  }
 };
 
 GanttMaster.prototype.changeTaskDates = function (task, start, end) {
@@ -590,8 +574,8 @@ GanttMaster.prototype.changeTaskDates = function (task, start, end) {
 };
 
 
-GanttMaster.prototype.moveTask = function (task, newStart) {
-  return task.moveTo(newStart, true);
+GanttMaster.prototype.moveTask = function (task, newDate) {
+  return task.moveTo(newDate, true);
 };
 
 
@@ -712,8 +696,6 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
   ret.deletedTaskIds = this.deletedTaskIds;  //this must be consistent with transactions and undo
 
   if (!forTransaction) {
-    ret.resources = this.resources;
-    ret.roles = this.roles;
     ret.canWrite = GanttMaster.permissions.canWrite;
     ret.zoom = this.gantt.zoom;
 
@@ -770,34 +752,6 @@ GanttMaster.prototype.markUnChangedTasksAndAssignments=function(newProject){
 
         newTask.unchanged=!taskChanged;
 
-
-        //se ci sono assegnazioni
-        if (newTask.assigs&&newTask.assigs.length>0){
-
-          //se abbiamo trovato il vecchio task e questo aveva delle assegnazioni
-          if (oldTask && oldTask.assigs && oldTask.assigs.length>0){
-            for (var m=0;m<oldTask.assigs.length;m++){
-              var oldAssig=oldTask.assigs[m];
-              //si cerca la nuova assegnazione corrispondente
-              var newAssig;
-              for (var k=0;k<newTask.assigs.length;k++){
-                if(oldAssig.id==newTask.assigs[k].id){
-                  newAssig=newTask.assigs[k];
-                  break;
-                }
-              }
-
-              //se c'è una nuova assig corrispondente
-              if(newAssig){
-                //si confrontano i valori per vedere se è cambiata
-                newAssig.unchanged=
-                  newAssig.resourceId==oldAssig.resourceId &&
-                  newAssig.roleId==oldAssig.roleId &&
-                  newAssig.effort==oldAssig.effort;
-              }
-            }
-          }
-        }
       }
     }
   }
@@ -981,11 +935,11 @@ GanttMaster.prototype.addBelowCurrentTask = function () {
   if (!GanttMaster.permissions.canWrite|| !GanttMaster.permissions.canAdd)
     return;
 
-  var factory = new TaskFactory();
+  var factory = new TaskFactory(this);
   var ch;
   var row = 0;
   if (self.currentTask && self.currentTask.name) {
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, 1);
+    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, self.currentTask.end, 1);
     row = self.currentTask.getRow() + 1;
 
     if (row>0) {
@@ -1004,7 +958,7 @@ GanttMaster.prototype.addAboveCurrentTask = function () {
   var self = this;
   if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd)
     return;
-  var factory = new TaskFactory();
+  var factory = new TaskFactory(this);
 
   var ch;
   var row = 0;
@@ -1013,7 +967,7 @@ GanttMaster.prototype.addAboveCurrentTask = function () {
     if (self.currentTask.level <= 0)
       return;
 
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, 1);
+    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, self.currentTask.end, 1);
     row = self.currentTask.getRow();
 
     if (row > 0) {

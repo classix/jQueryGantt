@@ -551,6 +551,16 @@ Date.prototype.incrementDateByWorkingDays=function (days) {
   return this;
 };
 
+Date.prototype.decrementDateByWorkingDays=function (days) {
+  var q = Math.abs(days);
+  while (q > 0) {
+    this.setDate(this.getDate() - (days > 0 ? 1 : -1));
+    if (!this.isHoliday())
+      q--;
+  }
+  return this;
+};
+
 
 Date.prototype.distanceInDays= function (toDate){
   // Discard the time and time-zone information.

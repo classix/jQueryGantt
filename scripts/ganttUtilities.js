@@ -324,29 +324,29 @@ $.splittify = {
 
 
 //<%------------------------------------------------------------------------  UTILITIES ---------------------------------------------------------------%>
-function computeStart(start) {
-  return computeStartDate(start).getTime();
+function computeStart(start, backward) {
+  return computeStartDate(start, backward).getTime();
 }
-function computeStartDate(start) {
-  var d = new Date(start + 3600000 * 12);
+function computeStartDate(start, backward) {
+  var d = new Date(start);
   d.setHours(0, 0, 0, 0);
   //move to next working day
   while (GanttMaster.isHoliday(d)) {
-    d.setDate(d.getDate() + 1);
+    d.setDate(d.getDate() + (backward ? -1 : 1));
   }
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function computeEnd(end) {
-  return computeEndDate(end).getTime();
+function computeEnd(end, backward) {
+  return computeEndDate(end, backward).getTime();
 }
-function computeEndDate(end) {
-  var d = new Date(end - 3600000 * 12);
+function computeEndDate(end, backward) {
+  var d = new Date(end);
   d.setHours(23, 59, 59, 999);
-  //move to next working day
+  //move to next/last working day
   while (GanttMaster.isHoliday(d)) {
-    d.setDate(d.getDate() + 1);
+    d.setDate(d.getDate() + (backward ? -1 : 1));
   }
   d.setHours(23, 59, 59, 999);
   return d;
@@ -365,10 +365,27 @@ function computeEndByDuration(start, duration) {
   return d.getTime();
 }
 
+function computeStartByDuration(end, duration) {
+  var d = new Date(end);
+  var q = duration - 1;
+  while (q > 0) {
+    d.setDate(d.getDate() - 1);
+    if (!GanttMaster.isHoliday(d))
+      q--;
+  }
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 function incrementDateByWorkingDays(date, days) {
   var d = new Date(date);
   d.incrementDateByWorkingDays(days);
+  return d.getTime();
+}
+
+function decrementDateByWorkingDays(date, days) {
+  var d = new Date(date);
+  d.decrementDateByWorkingDays(days);
   return d.getTime();
 }
 
@@ -379,7 +396,7 @@ function recomputeDuration(start, end) {
 }
 
 
-function resynchDates(leavingField, startField, startMilesField, durationField, endField, endMilesField) {
+function resynchDates(backward, leavingField, startField, startMilesField, durationField, endField, endMilesField) {
   //console.debug("resynchDates",leavingField.prop("name"), startField.prop("name"), startMilesField.prop("name"), durationField.prop("name"), endField.prop("name"), endMilesField.prop("name"));
   function resynchDatesSetFields(command) {
     //console.debug("resynchDatesSetFields",command);
@@ -450,22 +467,33 @@ function resynchDates(leavingField, startField, startMilesField, durationField, 
 
   var ret;
   if (leavingFieldName == 'start' && startIsFilled) {
-    if (endIsMilesAndFilled && durIsFilled) {
+    if (backward) {
       ret = resynchDatesSetFields("CHANGE_DURATION");
-    } else if (durIsFilled) {
-      ret = resynchDatesSetFields("CHANGE_END");
+    } else {
+      if (endIsMilesAndFilled && durIsFilled) {
+        ret = resynchDatesSetFields("CHANGE_DURATION");
+      } else if (durIsFilled) {
+        ret = resynchDatesSetFields("CHANGE_END");
+      }
     }
-
   } else if (leavingFieldName == 'duration' && durIsFilled && !(endIsMilesAndFilled && startIsMilesAndFilled)) {
-    if (endIsMilesAndFilled && !startIsMilesAndFilled) {
+    if ((endIsMilesAndFilled || backward) && !startIsMilesAndFilled) {
       ret = resynchDatesSetFields("CHANGE_START");
     } else if (!endIsMilesAndFilled) {
       //document.title=('go and change end!!');
-      ret = resynchDatesSetFields("CHANGE_END");
+        ret = resynchDatesSetFields("CHANGE_END");
     }
 
   } else if (leavingFieldName == 'end' && endIsFilled) {
-    ret = resynchDatesSetFields("CHANGE_DURATION");
+    if (backward) {
+      if (startIsMilesAndFilled && durIsFilled) {
+        ret = resynchDatesSetFields("CHANGE_DURATION");
+      } else if (durIsFilled) {
+        ret = resynchDatesSetFields("CHANGE_START");
+      } 
+    } else {
+      ret = resynchDatesSetFields("CHANGE_DURATION");
+    }
   }
   return ret;
 }

@@ -35,7 +35,7 @@ function GridEditor(master) {
 
 GridEditor.prototype.fillEmptyLines = function () {
   //console.debug("fillEmptyLines")
-  var factory = new TaskFactory();
+  var factory = new TaskFactory(this.master);
   var master = this.master;
 
   //console.debug("GridEditor.fillEmptyLines");
@@ -60,9 +60,11 @@ GridEditor.prototype.fillEmptyLines = function () {
       master.beginTransaction();
       var lastTask;
       var start = new Date().getTime();
+      var end = new Date().getTime();
       var level = 0;
       if (master.tasks[0]) {
         start = master.tasks[0].start;
+        end = master.tasks[0].end;
         level = master.tasks[0].level + 1;
       }
 
@@ -70,7 +72,7 @@ GridEditor.prototype.fillEmptyLines = function () {
       var cnt=0;
       emptyRow.prevAll(".emptyRow").addBack().each(function () {
         cnt++;
-        var ch = factory.build("tmp_fk" + new Date().getTime()+"_"+cnt, "", "", level, start, 1);
+        var ch = factory.build("tmp_fk" + new Date().getTime()+"_"+cnt, "", "", level, start, end, 1);
         var task = master.addTask(ch);
         lastTask = ch;
       });
@@ -283,7 +285,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           var task = self.master.getTask(taskId);
 
           var leavingField = inp.prop("name");
-          var dates = resynchDates(inp, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+          var dates = resynchDates(self.master.schedulingDirection, inp, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
           //console.debug("resynchDates",new Date(dates.start), new Date(dates.end),dates.duration)
           //update task from editor
           self.master.beginTransaction();
@@ -312,7 +314,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       self.master.beginTransaction();
       //milestones
       task[field] = el.prop("checked");
-      resynchDates(el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+      resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
       self.master.endTransaction();
     }
 
@@ -381,7 +383,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         }
 
       } else if (field == "duration") {
-        var dates = resynchDates(el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+        var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
         self.master.changeTaskDates(task, dates.start, dates.end);
       } else if (field == "name" && el.val() == "") { // remove unfilled task
         par = task.getParent();

@@ -741,43 +741,6 @@
     stroke: rgba(255, 0, 0, 0.7);
   }
 
-
-
-  /*--------------------------------------------------- RESOURCE ADD  --------------------------------------------------*/
-  .ganttAddResource{
-    position: absolute;
-    width: 660px;
-    height: 300px;
-    border: 1px solid red;
-    background-color: white;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    top:120px;
-    left:70px;
-    z-index: 200;
-    padding: 10px;
-  }
-
-  .ganttAddResource tr.isCompany{
-    display:none;
-  }
-
-  .ganttAddResource.isCompany tr.isCompany{
-    display:table-row;
-  }
-  .ganttAddResource.isCompany tr.isPerson{
-    display:none;
-  }
-  .ganttAddResourceBG {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background-color: rgba(0, 0, 0, .3);
-    z-index: 200;
-  }
-
-
   /*---------------------------------#LOG_CHANGES_CONTAINER --------------------------------------------*/
   #LOG_CHANGES_CONTAINER{
     display: none;
