@@ -41,6 +41,10 @@ var receiveMessage = function (event)
       }
       break;
     }
+    case "update_options": {
+      setOptions(event.data.options);
+      break;
+    }
     case "update_locales": {
       setLocale(event.data.data);
       break;
@@ -88,6 +92,19 @@ var setPermissions = function (permissions) {
     ge.reset();
     ge.loadProject(project, true);
     ge.checkpoint(); //empty the undo stack
+  }
+};
+
+var setOptions = function (options) {
+  if (!_.isNil(options)) {
+    _.merge(ganttOptions, options);
+    applyOptions();
+    if (ganttDataLoaded) {
+      var project = ge.saveProject();
+      ge.reset();
+      ge.loadProject(project, true);
+      ge.checkpoint(); //empty the undo stack
+    }
   }
 };
 
