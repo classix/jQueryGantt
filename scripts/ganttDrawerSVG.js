@@ -605,6 +605,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         var task = self.master.getTask($(this).attr("taskid"));
         task.rowElement.click();
       }).dragExtedSVG($(self.svg.root()), {
+        minSize: self.fx * 3600 * 1000 * 24,
         canResize:  GanttMaster.permissions.canWrite && task.canWrite,
         canDrag:    GanttMaster.permissions.canWrite && task.canWrite,
         startDrag:  function (e) {
@@ -678,21 +679,26 @@ Ganttalendar.prototype.drawTask = function (task) {
             }
           }
         },
-        startResize:function (e) {
+        startResize: function (e) {
           //console.debug("startResize");
           $(".ganttSVGBox .focused").removeClass("focused");
           var taskbox = $(this);
           var text = $(self.svg.text(parseInt(taskbox.attr("x")) + parseInt(taskbox.attr("width") + 8), parseInt(taskbox.attr("y")), "", {"font-size":"10px", "fill":"red"}));
           taskBox.data("textDur", text);
         },
-        resize:     function (e) {
+        resize: function (e, resizingFromStart, resizingFromEnd) {
           //find and update links from, to
           var taskbox = $(this);
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
-          var en = Math.round(((parseFloat(taskbox.attr("x")) + parseFloat(taskbox.attr("width"))) / self.fx) + self.startMillis);
-          var d = computeStartDate(st, backward).distanceInWorkingDays(computeEndDate(en, backward));
+          var taskBoxWidth = taskbox.children('rect')[0].getBBox().width;
+          var en = Math.round(((parseFloat(taskbox.attr("x")) + taskBoxWidth) / self.fx) + self.startMillis);
+          var d = task.duration;
+          if (resizingFromStart) {
+            d = computeStartDate(st + 11.99 * 3600000, backward).distanceInWorkingDays(new Date(task.end));
+          } else if (resizingFromEnd) {
+            d = (new Date(task.start)).distanceInWorkingDays(computeEndDate(en, backward));
+          }
           var text = taskBox.data("textDur");
-          var taskBoxWidth = parseInt(taskbox.attr("width"));
           text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(Math.max(d,1));
           var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite');
           var padding = 5;
@@ -706,18 +712,24 @@ Ganttalendar.prototype.drawTask = function (task) {
 
           $("[from=\"" + task.id + "\"],[to=\"" + task.id + "\"]").trigger("update");
         },
-        stopResize: function (e) {
+        stopResize: function (hasNewWidth, e, resizingFromStart, resizingFromEnd) {
           self.resDrop = true; //hack to avoid select
           //console.debug(ui)
           var textBox = taskBox.data("textDur");
           if (textBox)
             textBox.remove();
+          if (!hasNewWidth) return;
           var taskbox = $(this);
+          var taskBoxWidth = taskbox.children('rect')[0].getBBox().width;
           var task = self.master.getTask(taskbox.attr("taskid"));
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
-          var en = Math.round(((parseFloat(taskbox.attr("x")) + parseFloat(taskbox.attr("width"))) / self.fx) + self.startMillis);
+          var en = Math.round(((parseFloat(taskbox.attr("x")) + taskBoxWidth) / self.fx) + self.startMillis);
           self.master.beginTransaction();
-          self.master.changeTaskDates(task, new Date(st), new Date(en));
+          if (resizingFromStart) {
+            self.master.changeTaskDates(task, new Date(st + 11.99 * 3600000), task.end);
+          } else if (resizingFromEnd) {
+            self.master.changeTaskDates(task, task.start, new Date(en));
+          }
           self.master.endTransaction();
         }
       });
@@ -1213,11 +1225,13 @@ $.fn.dragExtedSVG = function (svg, opt) {
 
               target.attr("width", nW < options.minSize ? options.minSize : nW);
               //callback
-              options.resize.call(target.get(0), e);
+              options.resize.call(target.get(0), e, false, true);
             });
 
             //bind mouse up on body to stop resizing
-            $("body").one("mouseup.deSVG", stopResize);
+            $("body").one("mouseup.deSVG", function (ev) {
+              stopResize(ev, false, true);
+            });
 
 
           //start resize start
@@ -1241,14 +1255,17 @@ $.fn.dragExtedSVG = function (svg, opt) {
               var nx1= offsetMouseRect-(posx-e.pageX);
               var nW = (x2-x1) + (posx-e.pageX);
               nW=nW < options.minSize ? options.minSize : nW;
+              nx1 = e.pageX >= (x2 - nW) ? nx1 - (e.pageX - x2 + nW) : nx1;
               target.attr("x",nx1);
               target.attr("width", nW);
               //callback
-              options.resize.call(target.get(0), e);
+              options.resize.call(target.get(0), e, true, false);
             });
 
             //bind mouse up on body to stop resizing
-            $("body").one("mouseup.deSVG", stopResize);
+            $("body").one("mouseup.deSVG", function (ev) {
+              stopResize(ev, true, false);
+            });
 
 
 
@@ -1302,10 +1319,12 @@ $.fn.dragExtedSVG = function (svg, opt) {
   return this;
 
 
-  function stopResize(e) {
+  function stopResize(e, resizingFromStart, resizingFromEnd) {
     $(svg).unbind("mousemove.deSVG").unbind("mouseup.deSVG").unbind("mouseleave.deSVG");
     if (target && target.attr("oldw")!=target.attr("width"))
-      options.stopResize.call(target.get(0), e); //callback
+      options.stopResize.call(target.get(0), true, e, resizingFromStart, resizingFromEnd); //callback
+    else
+      options.stopResize.call(target.get(0), false);
     target = undefined;
     $("body").clearUnselectable();
   }
