@@ -45,8 +45,8 @@ function TaskFactory(master) {
         break;
       }
       case GanttConstants.SCHEDULE_DIR.NO_SCHEDULING: {
-        newStart = start;
-        newEnd = end;
+        newStart = (new Date(start)).setHours(0,0,0,0);
+        newEnd = (new Date(end)).setHours(23,59,59,999);
         break;
       }
     }
