@@ -1316,10 +1316,10 @@ GanttMaster.prototype.resize = function () {
  * Translated from Java code supplied by M. Jessup here http://stackoverflow.com/questions/2985317/critical-path-method-algorithm
  *
  * For each task computes:
- * earlyStart, earlyFinish, latestStart, latestFinish, criticalCost
+ * earliestStart, earliestFinish, latestStart, latestFinish, criticalCost
  *
  * A task on the critical path has isCritical=true
- * A task not in critical path can float by latestStart-earlyStart days
+ * A task not in critical path can float by latestStart-earliestStart days
  *
  * If you use critical path avoid usage of dependencies between different levels of tasks
  *
@@ -1340,8 +1340,8 @@ GanttMaster.prototype.computeCriticalPath = function () {
   // reset values
   for (var i = 0; i < tasks.length; i++) {
     var t = tasks[i];
-    t.earlyStart = -1;
-    t.earlyFinish = -1;
+    t.earliestStart = -1;
+    t.earliestFinish = -1;
     t.latestStart = -1;
     t.latestFinish = -1;
     t.criticalCost = -1;
@@ -1390,7 +1390,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
     }
   }
 
-  // set earlyStart, earlyFinish, latestStart, latestFinish
+  // set earliestStart, earliestFinish, latestStart, latestFinish
   computeMaxCost(tasks);
   var initialNodes = initials(tasks);
   calculateEarly(initialNodes);
@@ -1434,20 +1434,20 @@ GanttMaster.prototype.computeCriticalPath = function () {
   function calculateEarly(initials) {
     for (var i = 0; i < initials.length; i++) {
       var initial = initials[i];
-      initial.earlyStart = 0;
-      initial.earlyFinish = initial.duration;
+      initial.earliestStart = 0;
+      initial.earliestFinish = initial.duration;
       setEarly(initial);
     }
   }
 
   function setEarly(initial) {
-    var completionTime = initial.earlyFinish;
+    var completionTime = initial.earliestFinish;
     var inferiorTasks = initial.getInferiorTasks();
     for (var i = 0; i < inferiorTasks.length; i++) {
       var t = inferiorTasks[i];
-      if (completionTime >= t.earlyStart) {
-        t.earlyStart = completionTime;
-        t.earlyFinish = completionTime + t.duration;
+      if (completionTime >= t.earliestStart) {
+        t.earliestStart = completionTime;
+        t.earliestFinish = completionTime + t.duration;
       }
       setEarly(t);
     }
@@ -1456,7 +1456,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
   function calculateCritical(tasks) {
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
-      t.isCritical = (t.earlyStart == t.latestStart);
+      t.isCritical = (t.earliestStart == t.latestStart);
     }
   }
 
