@@ -788,6 +788,13 @@ Task.prototype.getSuperiors = function () {
   return ret;
 };
 
+Task.prototype.getLinks = function (outgoing) {
+  var self = this;
+  return this.master.links.filter(function (link) {
+    return link[outgoing ? 'from' : 'to'] === self;
+  });
+};
+
 Task.prototype.getSuperiorTasks = function () {
   var ret = [];
   var sups = this.getSuperiors();
@@ -875,9 +882,11 @@ Task.prototype.isDependent = function (t) {
   return false;
 };
 
-Task.prototype.setLatest = function (maxCost) {
+Task.prototype.setLatest = function (maxCost, maxEnd) {
   this.latestStart = maxCost - this.criticalCost;
+  this.latestStartDate = (new Date(maxEnd)).decrementDateByWorkingDays(this.criticalCost - 1).getTime();
   this.latestFinish = this.latestStart + this.duration;
+  this.latestFinishDate = (new Date(this.latestStartDate)).incrementDateByWorkingDays(this.duration - 1).getTime();
 };
 
 

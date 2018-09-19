@@ -1332,9 +1332,10 @@ GanttMaster.prototype.computeCriticalPath = function () {
     return false;
 
   // do not consider grouping tasks
+  // OD: FIXME 18.09.2018: exclude the auto added groups also
   var tasks = this.tasks.filter(function (t) {
     //return !t.isParent()
-    return (t.getRow() > 0) && (!t.isParent() || (t.isParent() && !t.isDependent()));
+    return (t.getRow() > 0) && (!t.isParent() || (t.isParent() && !t.isDependent())); //OD: isDependent without parameter will always return false !!! 
   });
 
   // reset values
@@ -1351,7 +1352,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
   // tasks whose critical cost has been calculated
   var completed = [];
   // tasks whose critical cost needs to be calculated
-  var remaining = tasks.concat(); // put all tasks in remaining
+  var remaining = tasks.concat(); // put all tasks in remaining as a copy
 
 
   // Backflow algorithm
@@ -1369,8 +1370,9 @@ GanttMaster.prototype.computeCriticalPath = function () {
         var critical = 0;
         for (var j = 0; j < inferiorTasks.length; j++) {
           var ta = inferiorTasks[j];
-          if (ta.criticalCost > critical) {
-            critical = ta.criticalCost;
+          var critCostWithDepsLag = ta.criticalCost + _.find(this.links, {from: task, to: ta}).lag;
+          if (critCostWithDepsLag > critical) {
+            critical = critCostWithDepsLag;
           }
         }
         task.criticalCost = critical + task.duration;
@@ -1409,16 +1411,20 @@ GanttMaster.prototype.computeCriticalPath = function () {
 
   function computeMaxCost(tasks) {
     var max = -1;
+    var maxEnd = 0;
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
 
       if (t.criticalCost > max)
         max = t.criticalCost;
+
+      if (t.end > maxEnd)
+        maxEnd = t.end;
     }
     //console.debug("Critical path length (cost): " + max);
     for (var j = 0; j < tasks.length; j++) {
       var ta = tasks[j];
-      ta.setLatest(max);
+      ta.setLatest(max, maxEnd);
     }
   }
 
@@ -1436,20 +1442,25 @@ GanttMaster.prototype.computeCriticalPath = function () {
       var initial = initials[i];
       initial.earliestStart = 0;
       initial.earliestFinish = initial.duration;
-      setEarly(initial);
+      initial.earliestStartDate = initial.start;
+      initial.earliestFinishDate = initial.end;
+      setEarly(initial, new Date(initial.start));
     }
   }
 
-  function setEarly(initial) {
+  function setEarly(initial, initialDate) {
     var completionTime = initial.earliestFinish;
     var inferiorTasks = initial.getInferiorTasks();
     for (var i = 0; i < inferiorTasks.length; i++) {
       var t = inferiorTasks[i];
+      completionTime += _.find(initial.master.links, {from: initial, to: t}).lag || 0;
       if (completionTime >= t.earliestStart) {
         t.earliestStart = completionTime;
+        t.earliestStartDate = initialDate.incrementDateByWorkingDays(completionTime).getTime();
         t.earliestFinish = completionTime + t.duration;
-      }
-      setEarly(t);
+        t.earliestFinishDate = initialDate.incrementDateByWorkingDays(completionTime + t.duration).getTime();
+      } 
+      setEarly(t, new Date(t.start));
     }
   }
 
