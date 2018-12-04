@@ -149,8 +149,8 @@ var setHolidays = function (data) {
 };
 
 var applyOptions = function () {
-  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection'];
-  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection'];
+  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath'];
+  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath'];
   
   for (var i = 0; i < originalKeys.length; i++) {
     var value = ganttOptions[originalKeys[i]];
@@ -202,5 +202,11 @@ function sendClassiXEvent(eventType, args) {
 function saveGantt() {
   var prj = ge.saveProject();
   var msg = { type: 'save_data', data: prj };
+  parent.postMessage(msg, location.origin);
+}
+
+function updateGantt() {
+  var prj = ge.saveProject();
+  var msg = { type: 'update_data', data: prj };
   parent.postMessage(msg, location.origin);
 }

@@ -592,6 +592,9 @@ GanttMaster.prototype.taskIsChanged = function () {
     master.editor.redraw();
     master.gantt.refreshGantt();
     master.element.trigger("gantt.refreshGanttCompleted");
+    if (master.autoUpdate) {
+      updateGantt();
+    }
     //profiler.stop();
   });
   //profilerext.stop();
@@ -701,9 +704,6 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
 
     //mark un-changed task and assignments
     this.markUnChangedTasksAndAssignments(ret);
-
-    //si aggiunge il commento al cambiamento di date/status
-    ret.changesReasonWhy=$("#LOG_CHANGES").val();
 
   }
 

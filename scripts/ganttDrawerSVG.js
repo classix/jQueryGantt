@@ -1085,7 +1085,7 @@ Ganttalendar.prototype.setScrollPos = function (scrollX, scrollY) {
 Ganttalendar.prototype.refreshGantt = function () {
   //console.debug("refreshGantt")
 
-  if (this.showCriticalPath) {
+  if (this.showCriticalPath || this.master.autoComputeCriticalPath) {
     this.master.computeCriticalPath();
   }
 
