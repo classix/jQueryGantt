@@ -14,15 +14,15 @@ $.JST = {
             var templateBody = morphItGrantt.templates[type];
 
             if (!templateBody.match(/##\w+##/)) { // is Resig' style? e.g. (#=id#) or (# ...some javascript code 'obj' is the alias for the object #)
+              var arrayItemsAsText = templateBody.replace(/[\r\t\n]/g, " ")
+                .replace(/'(?=[^#]*#\))/g, "\t")
+                .split("'").join("\\'")
+                .split("\t").join("'")
+                .replace(/\(#=(.+?)#\)/g, "',_.escape($1),'")
+                .split("(#").join("');")
+                .split("#)").join("p.push('");
               var strFunc = "var p=[],print=function(){p.push.apply(p,arguments);};" +
-                "with(obj){p.push('" +
-                templateBody.replace(/[\r\t\n]/g, " ")
-                            .replace(/'(?=[^#]*#\))/g, "\t")
-                            .split("'").join("\\'")
-                            .split("\t").join("'")
-                            .replace(/\(#=(.+?)#\)/g, "',$1,'")
-                            .split("(#").join("');")
-                            .split("#)").join("p.push('") + "');}return p.join('');";
+                "with(obj){p.push('" + arrayItemsAsText + "');}return p.join('');";
               try {
                 $.JST._templates[type] = new Function("obj", strFunc);
               } catch (e) {
@@ -49,9 +49,9 @@ $.JST = {
       for (var i = 0; i < attrs.length; i++) {
         var attrName = attrs[i];
         if ($.trim(attrName.toLowerCase()) === "innerhtml") {
-          elem.html(attrValue);
+          elem.html(_.escape(attrValue));
         } else {
-          elem.attr(attrName, attrValue);
+          elem.attr(attrName, _.escape(attrValue));
         }
       }
     });
@@ -65,7 +65,7 @@ $.JST = {
       for (var prop in jsonData){
         var value = jsonData[prop];
         if (typeof(value) == "string")
-          value = (value + "").replace(/\n/g, "<br>");
+          value = _.escape(value + "").replace(/\n/g, "<br>");
         jsData[prop]=value;
       }
     } else {
