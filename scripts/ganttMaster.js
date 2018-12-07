@@ -87,7 +87,9 @@ GanttMaster.prototype.init = function (workSpace) {
   place.append(this.editor.gridified);
 
   //create gantt
-  this.gantt = new Ganttalendar("m", new Date().getTime() - 3600000 * 24 * 2, new Date().getTime() + 3600000 * 24 * 15, this, place.width() * 0.6);
+  var startDate = !_.isNil(this.viewStartDate) ? this.viewStartDate : (new Date().getTime() - 3600000 * 24 * 2);
+  var endDate = !_.isNil(this.viewEndDate) ? this.viewEndDate : (new Date().getTime() + 3600000 * 24 * 15);
+  this.gantt = new Ganttalendar("m", startDate, endDate, this, place.width() * 0.6);
 
   //setup splitter
   self.splitter = $.splittify.init(place, this.editor.gridified, this.gantt.element, 60);
@@ -297,7 +299,7 @@ GanttMaster.isHoliday = function (date) {
   if (!isWorkingDay) return true;
   
   // check holiday
-  if (date < GanttMaster.locales.holidaysStartDate || date > GanttMaster.locales.holidaysEndDate) {
+  if (!GanttMaster.locales.holidaysStartDate || !GanttMaster.locales.holidaysEndDate || date < GanttMaster.locales.holidaysStartDate || date > GanttMaster.locales.holidaysEndDate) {
     console.log('Missing holiday infomation: ' + date);
   }
   var clearedDate = date.clearTime().getTime();
@@ -475,7 +477,9 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
   this.endTransaction();
   var self = this;
   if (!keepScroll) {
-    this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
+    if (this.includeToday) {
+      this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
+    }
   }
 };
 
@@ -1197,18 +1201,19 @@ GanttMaster.prototype.endTransaction = function () {
     this.__redoStack = [];
 
     //shrink gantt bundaries
-    this.gantt.originalStartMillis = Infinity;
-    this.gantt.originalEndMillis = -Infinity;
-    for (var i = 0; i < this.tasks.length; i++) {
-      var task = this.tasks[i];
-      if (this.gantt.originalStartMillis > task.start)
-        this.gantt.originalStartMillis = task.start;
-      if (this.gantt.originalEndMillis < task.end)
-        this.gantt.originalEndMillis = task.end;
-
+    if (this.autoShrinkCalendar) {
+      this.gantt.originalStartMillis = Infinity;
+      this.gantt.originalEndMillis = -Infinity;
+      for (var i = 0; i < this.tasks.length; i++) {
+        var task = this.tasks[i];
+        if (this.gantt.originalStartMillis > task.start)
+          this.gantt.originalStartMillis = task.start;
+        if (this.gantt.originalEndMillis < task.end)
+          this.gantt.originalEndMillis = task.end;
+      }
     }
-    this.taskIsChanged(); //enqueue for gantt refresh
-
+    //enqueue for gantt refresh
+    this.taskIsChanged(); 
 
     //error -> rollback
   } else {

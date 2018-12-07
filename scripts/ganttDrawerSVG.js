@@ -34,7 +34,7 @@ function Ganttalendar(zoom, startmillis, endMillis, master, minGanttSize) {
 
   this.zoom = zoom;
   this.minGanttSize = minGanttSize;
-  this.includeToday = true; //when true today is always visible. If false boundaries comes from tasks periods
+  this.includeToday = _.isNil(master.includeToday) ? true : master.includeToday; //when true today is always visible. If false boundaries comes from tasks periods
   this.showCriticalPath = false; //when true critical path is highlighted
 
   this.zoomLevels = [ "d", "w","w2","w3", "m","m2", "q", "q2", "s", "y"];

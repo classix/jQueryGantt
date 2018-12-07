@@ -98,9 +98,9 @@ var setPermissions = function (permissions) {
 var setOptions = function (options) {
   if (!_.isNil(options)) {
     _.merge(ganttOptions, options);
-    applyOptions();
     if (ganttDataLoaded) {
       var project = ge.saveProject();
+      applyOptions();
       ge.reset();
       ge.loadProject(project, true);
       ge.checkpoint(); //empty the undo stack
@@ -149,13 +149,22 @@ var setHolidays = function (data) {
 };
 
 var applyOptions = function () {
-  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath'];
-  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath'];
+  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 'includeToday', 'autoShrinkCalendar'];
+  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 'includeToday', 'autoShrinkCalendar'];
   
   for (var i = 0; i < originalKeys.length; i++) {
     var value = ganttOptions[originalKeys[i]];
     if (!_.isNil(value)) {
       ge[mapKeys[i]] = value;
+    }
+  }
+
+  if (ge.gantt) {
+    if (!_.isNil(ganttOptions.viewStartDate)) {
+      ge.gantt.originalStartMillis = ganttOptions.viewStartDate;
+    }
+    if (!_.isNil(ganttOptions.viewEndDate)) {
+      ge.gantt.originalEndMillis = ganttOptions.viewEndDate;
     }
   }
 };
