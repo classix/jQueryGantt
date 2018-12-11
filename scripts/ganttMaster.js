@@ -1402,6 +1402,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
   var initialNodes = initials(tasks);
   calculateEarly(initialNodes);
   calculateCritical(tasks);
+  calculateFloats(tasks);
 
   return tasks;
 
@@ -1473,6 +1474,20 @@ GanttMaster.prototype.computeCriticalPath = function () {
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
       t.isCritical = (t.earliestStart == t.latestStart);
+    }
+  }
+
+  function calculateFloats(tasks) {
+    for (var i = 0; i < tasks.length; i++) {
+      var t = tasks[i];
+      t.totalFloat = t.latestStart - t.earliestStart;
+
+      var minEarliestStartOfSucc = Infinity;
+      var successors = t.getInferiorTasks();
+      if (successors.length) {
+          minEarliestStartOfSucc = _.minBy(successors, 'earliestStart').earliestStart;
+      }
+      t.freeFloat = minEarliestStartOfSucc - t.earliestFinish;
     }
   }
 
