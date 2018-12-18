@@ -49,6 +49,8 @@ function GanttMaster() {
   this.maxEditableDate = Infinity;
   this.set100OnClose=false;
 
+  this.defaultTaskColor = "rgba(59, 191, 103, 0.9)";
+
   this.showSaveButton = false;
 
   this.fillWithEmptyLines=true; //when is used by widget it could be usefull to do not fill with empty lines
@@ -308,9 +310,9 @@ GanttMaster.isHoliday = function (date) {
 };
 
 
-GanttMaster.prototype.createTask = function (id, name, code, level, start, end, duration) {
+GanttMaster.prototype.createTask = function (id, name, code, level, start, end, duration, color) {
   var factory = new TaskFactory(this);
-  return factory.build(id, name, code, level, start, end, duration);
+  return factory.build(id, name, code, level, start, end, duration, null, color);
 };
 
 //update depends strings
@@ -408,10 +410,12 @@ GanttMaster.prototype.addTask = function (task, row) {
   var linkLoops = !this.updateLinks(task);
 
   //set the status according to parent
-  if (task.getParent())
-    task.status = task.getParent().status;
-  else
-    task.status = "STATUS_ACTIVE";
+  if (this.useStatus) {
+    if (task.getParent())
+      task.status = task.getParent().status;
+    else
+      task.status = "STATUS_ACTIVE";
+  }
 
   var ret = task;
   if (linkLoops || !task.setPeriod(task.start, task.end)) {
@@ -495,7 +499,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   for (var i = 0; i < tasks.length; i++) {
     task = tasks[i];
     if (!(task instanceof Task)) {
-      var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.end, task.duration, task.collapsed);
+      var t = factory.build(task.id, task.name, task.code, task.level, task.start, task.end, task.duration, task.collapsed, task.color);
       for (var key in task) {
         if (key != "end" && key != "start") {
           t[key] = task[key]; //copy all properties
@@ -510,7 +514,6 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
   //var prof=new Profiler("gm_loadTasks_addTaskLoop");
   for (var j = 0; j < this.tasks.length; j++) {
     task = this.tasks[j];
-
 
     var numOfError = this.__currentTransaction && this.__currentTransaction.errors ? this.__currentTransaction.errors.length : 0;
     //add Link collection in memory
@@ -943,7 +946,7 @@ GanttMaster.prototype.addBelowCurrentTask = function () {
   var ch;
   var row = 0;
   if (self.currentTask && self.currentTask.name) {
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, self.currentTask.end, 1);
+    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
     row = self.currentTask.getRow() + 1;
 
     if (row>0) {
@@ -971,7 +974,7 @@ GanttMaster.prototype.addAboveCurrentTask = function () {
     if (self.currentTask.level <= 0)
       return;
 
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, self.currentTask.end, 1);
+    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
     row = self.currentTask.getRow();
 
     if (row > 0) {

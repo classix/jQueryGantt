@@ -803,7 +803,21 @@ Ganttalendar.prototype.drawTask = function (task) {
 
   function _createTaskSVG(task, dimensions) {
     var svg = self.svg;
-    var taskSvg = svg.svg(self.tasksGroup, dimensions.x, dimensions.y, dimensions.width, dimensions.height, {class:"taskBox taskBoxSVG taskStatusSVG", status:task.status, taskid:task.id,fill:task.color||"#eee" });
+
+    var attribs = {
+      class: "taskBox taskBoxSVG",
+      taskid: task.id,
+      fill: task.color || self.master.defaultTaskColor || "#eee",
+    };
+
+    attribs.stroke = tinycolor(attribs.fill).darken(10).toString();
+    
+    if (self.master.useStatus) {
+      attribs.status = task.status;
+      attribs.class += " taskStatusSVG";
+    }
+
+    var taskSvg = svg.svg(self.tasksGroup, dimensions.x, dimensions.y, dimensions.width, dimensions.height, attribs);
 
     //svg.title(taskSvg, task.name);
     //external box

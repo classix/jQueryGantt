@@ -30,7 +30,7 @@ function TaskFactory(master) {
   /**
    * Build a new Task
    */
-  this.build = function (id, name, code, level, start, end, duration, collapsed) {
+  this.build = function (id, name, code, level, start, end, duration, collapsed, color) {
 
     var newStart, newEnd; 
     switch (master.schedulingDirection) {
@@ -51,12 +51,12 @@ function TaskFactory(master) {
       }
     }
 
-    return new Task(id, name, code, level, newStart, newEnd, duration, collapsed);
+    return new Task(id, name, code, level, newStart, newEnd, duration, collapsed, color);
   };
 
 }
 
-function Task(id, name, code, level, start, end, duration, collapsed) {
+function Task(id, name, code, level, start, end, duration, collapsed, color) {
   this.id = id;
   this.name = name;
   this.progress = 0;
@@ -70,6 +70,7 @@ function Task(id, name, code, level, start, end, duration, collapsed) {
   this.status = "STATUS_UNDEFINED";
   this.depends = "";
   this.canWrite = true; // by default all tasks are writeable
+  this.color = color;
 
   this.start = start;
   this.duration = duration;
@@ -681,6 +682,7 @@ Task.prototype.synchronizeStatus = function () {
 };
 
 Task.prototype.isLocallyBlockedByDependencies = function () {
+  if (!this.master.useStatus) return false;
   var sups = this.getSuperiors();
   var blocked = false;
   for (var i = 0; i < sups.length; i++) {
@@ -957,8 +959,10 @@ Task.prototype.indent = function () {
     this.master.updateDependsStrings();
     //enlarge parent using a fake set period
     updateTree(this);
-    //force status check starting from parent
-    this.getParent().synchronizeStatus();
+    if (this.master.useStatus) {
+      //force status check starting from parent
+      this.getParent().synchronizeStatus();
+    }
   }
   return ret;
 };
@@ -1005,8 +1009,11 @@ Task.prototype.outdent = function () {
   //enlarge parent using a fake set period
   this.setPeriod(this.start + 1, this.end + 1);
 
-  //force status check
-  this.synchronizeStatus();
+  if (this.master.useStatus) {
+    //force status check
+    this.synchronizeStatus();
+  }
+  
   return ret;
 };
 

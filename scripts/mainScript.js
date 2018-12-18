@@ -149,8 +149,12 @@ var setHolidays = function (data) {
 };
 
 var applyOptions = function () {
-  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 'includeToday', 'autoShrinkCalendar'];
-  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 'includeToday', 'autoShrinkCalendar'];
+  var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 
+  'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 
+  'viewEndDate', 'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor'];
+  var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 
+  'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 
+  'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor'];
   
   for (var i = 0; i < originalKeys.length; i++) {
     var value = ganttOptions[originalKeys[i]];

@@ -23,7 +23,7 @@
 function GridEditor(master) {
   this.master = master; // is the a GantEditor instance
 
-  var editorTabel = $.JST.createFromTemplate({}, "TASKSEDITHEAD");
+  var editorTabel = $.JST.createFromTemplate(master, "TASKSEDITHEAD");
   if (!GanttMaster.permissions.canSeeDep)
     editorTabel.find(".requireCanSeeDep").hide();
 
@@ -72,7 +72,7 @@ GridEditor.prototype.fillEmptyLines = function () {
       var cnt=0;
       emptyRow.prevAll(".emptyRow").addBack().each(function () {
         cnt++;
-        var ch = factory.build("tmp_fk" + new Date().getTime()+"_"+cnt, "", "", level, start, end, 1);
+        var ch = factory.build("tmp_fk" + new Date().getTime()+"_"+cnt, "", "", level, start, end, 1, null, master.defaultTaskColor);
         var task = master.addTask(ch);
         lastTask = ch;
       });
@@ -366,18 +366,19 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
             oneSuspended=oneSuspended|| sups[i].from.status=="STATUS_SUSPENDED";
           }
 
-          if (oneFailed){
-            task.changeStatus("STATUS_FAILED");
-          } else if (oneUndefined){
-            task.changeStatus("STATUS_UNDEFINED");
-          } else if (oneActive){
-            task.changeStatus("STATUS_SUSPENDED");
-          } else  if (oneSuspended){
-            task.changeStatus("STATUS_SUSPENDED");
-          } else {
-            task.changeStatus("STATUS_ACTIVE");
+          if (self.master.useStatus) {
+            if (oneFailed){
+              task.changeStatus("STATUS_FAILED");
+            } else if (oneUndefined){
+              task.changeStatus("STATUS_UNDEFINED");
+            } else if (oneActive){
+              task.changeStatus("STATUS_SUSPENDED");
+            } else  if (oneSuspended){
+              task.changeStatus("STATUS_SUSPENDED");
+            } else {
+              task.changeStatus("STATUS_ACTIVE");
+            }
           }
-
 
           self.master.changeTaskDeps(task); //dates recomputation from dependencies
         }
@@ -513,7 +514,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       self.master.endTransaction();
       el.attr("status", task.status);
     });
-    el.oneTime(3000, "hideChanger", function () {
+    el.oneTime(5000, "hideChanger", function () {
       changer.remove();
     });
     el.after(changer);
