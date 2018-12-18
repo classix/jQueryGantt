@@ -375,9 +375,9 @@ GanttMaster.prototype.removeAllLinks = function (task, openTrans) {
 };
 
 //------------------------------------  ADD TASK --------------------------------------------
-GanttMaster.prototype.addTask = function (task, row) {
+GanttMaster.prototype.addTask = function (task, row, forceAdd) {
   //console.debug("master.addTask",task,row,this);
-  if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd )
+  if (!forceAdd && (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd ))
     return;
 
   task.master = this; // in order to access controller from task
@@ -488,7 +488,8 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
 };
 
 
-GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
+GanttMaster.prototype.loadTasks = function (tasks, selectedRow, isForRollBack) {
+
   //console.debug("GanttMaster.prototype.loadTasks")
   var factory = new TaskFactory(this);
   //reset
@@ -529,7 +530,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow) {
       this.removeAllLinks(task, false);
     }
 
-    if (!task.setPeriod(task.start, task.end, true)) {
+    if (!task.setPeriod(task.start, task.end, !isForRollBack)) {
       showErrorMsg(GanttMaster.messages.GANTT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name);
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);
@@ -1236,7 +1237,7 @@ GanttMaster.prototype.endTransaction = function () {
     var oldTasks = JSON.parse(this.__currentTransaction.snapshot);
     this.deletedTaskIds = oldTasks.deletedTaskIds;
     this.__inUndoRedo = true; // avoid Undo/Redo stacks reset
-    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow);
+    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow, true);
     this.redraw();
 
   }
@@ -1270,7 +1271,7 @@ GanttMaster.prototype.undo = function () {
     var oldTasks = JSON.parse(his);
     this.deletedTaskIds = oldTasks.deletedTaskIds;
     this.__inUndoRedo = true; // avoid Undo/Redo stacks reset
-    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow);
+    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow, true);
     //console.debug(oldTasks,oldTasks.deletedTaskIds)
     this.redraw();
     //show/hide save button
@@ -1288,7 +1289,7 @@ GanttMaster.prototype.redo = function () {
     var oldTasks = JSON.parse(his);
     this.deletedTaskIds = oldTasks.deletedTaskIds;
     this.__inUndoRedo = true; // avoid Undo/Redo stacks reset
-    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow);
+    this.loadTasks(oldTasks.tasks, oldTasks.selectedRow, true);
     this.redraw();
     //console.debug("redo after:",undoStack,redoStack);
 
