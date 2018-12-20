@@ -37,7 +37,13 @@ var receiveMessage = function (event)
         _.merge(ganttOptions, event.data.options);
       }
       if (!_.isNil(event.data.project)) {
-        loadGantt(event.data.project);
+        loadGantt(event.data.project, event.data.dependencies);
+      }
+      break;
+    }
+    case "update_data": {
+      if (!_.isNil(event.data)) {
+        updateTasksAndDeps(event.data.tasks, event.data.dependencies, event.data.selectedTaskId);
       }
       break;
     }
@@ -173,7 +179,30 @@ var applyOptions = function () {
   }
 };
 
-var loadGantt = function (data) {
+// we need to convert the dependecies relationships from "task id" to "line index", because JQueryGantt works with line indices
+// but ClassiX Core need to use the ids to make it easier for the InstantView programmer
+var convertDependencies = function (dep, tasks) {
+  if(_.isEmpty(dep)) return "";
+  return _.join(_.map(_.split(dep, ","), function (d) {
+    var parts = _.split(d, ":");
+    parts[0] = _.findIndex(tasks, {id: _.trim(parts[0])}) + 1;
+    return _.join(parts,":");
+  }), ",");
+};
+
+var attachDependenciesToTasks = function (deps, tasks) {
+  // process dependencies that are specifies under "dependencies" and not inline in task
+  if (!_.isNil(deps) && !_.isNil(tasks)) {
+    _.each(tasks, function (task) {
+      var extDependencies = convertDependencies(_.join(_.map(_.filter(deps, {to: task.id}), function (d) { 
+        return d.from + ((d.buffer > 0) ? ":" + d.buffer : "");
+      }), ","), tasks);
+      task.depends += (task.depends !== "" ? "," : "") + extDependencies;
+    });
+  }
+};
+
+var loadGantt = function (project, dependecies) {
 
   if (ganttDataLoaded) {
     applyOptions();
@@ -187,11 +216,173 @@ var loadGantt = function (data) {
 
   //in order to force compute the best-fitting zoom level
   delete ge.gantt.zoom;
+
+  _.each(project.tasks, function (task) {
+    task.depends = convertDependencies(task.depends, project.tasks);
+  });
+
+  attachDependenciesToTasks(dependecies, project.tasks);
  
-  ge.loadProject(data);
+  ge.loadProject(project);
   ge.checkpoint(); //empty the undo stack
 
   ganttDataLoaded = true;
+};
+
+var updateTasksAndDeps = function (tasks, deps, selectedTaskId) {
+
+  if (!ganttDataLoaded) return;
+  var factory = new TaskFactory(ge);
+
+  // convert the depends attributes of the tasks to dependencies, because we need first all tasks added before creating the
+  // links between them (because we cannout predict the line number and yet to be added tasks could have dependencies between them )
+  deps = deps || [];
+  _.each(tasks, function (task) {
+    if (_.trim(task.depends) != "") {
+      _.each(_.split(task.depends, ","), function (d) {
+        var parts = _.split(d, ":");
+        deps.push({
+          from: _.trim(parts[0]),
+          to: task.id,
+          buffer: parts.length > 1 ? parseInt(parts[1]) : 0 
+        });
+      });
+      delete task.depends;
+    }
+  });
+
+  // delete tasks to delete
+  var tasksToDelete = _.intersectionWith(ge.tasks, _.remove(tasks, function (t) { return t.delete; }), function (o1, o2) { return o1.id === o2.id; });
+  _.each(tasksToDelete, function (t) {
+    t.deleteTask();
+  });
+
+  // add new tasks
+  var newTasks = _.remove(tasks, function (t) { return -1 === _.findIndex(ge.tasks, {id: t.id}); });
+  _.each(newTasks, function (t) {
+    var newTask = factory.build(t.id, t.name, t.code, t.level, t.start + ge.serverClientTimeOffset, t.end + ge.serverClientTimeOffset, t.duration, t.collapsed, t.color);
+    for (var key in t) {
+      if (key != "end" && key != "start") {
+        if (!_.isNil(t[key])) {
+          newTask[key] = t[key]; //copy all properties
+        }
+      }
+    }
+    ge.addTask(newTask, null, true);
+    
+    // hide the new task if the parent is collapsed
+    var parent = newTask.getParent();
+    if (parent) {
+      ge.editor.refreshExpandStatus(parent);
+      if (parent.isCollapsed()) {
+        newTask.rowElement.hide();
+      }
+    }
+  });
+
+  // alter existing tasks
+  _.each(tasks, function (t) {
+    var existingTask = _.find(ge.tasks, {id: t.id});
+    if (!existingTask) return true; //continue
+    for (var key in t) {
+      if (!_.includes(["start", "end", "id", "depends", "duration", "level", "collapsed"], key)) {
+        if (!_.isNil(t[key])) {
+          existingTask[key] = t[key]; //copy all properties
+        }
+      }
+    }
+
+    // level
+    if (!_.isNil(t.level) && t.level >= 0) {
+      var levelDiff = t.level - _.defaultTo(existingTask.level, 0);
+      if (levelDiff !== 0) {
+        var oldParent = existingTask.getParent();
+        if (levelDiff > 0) { // indent
+          _.times(levelDiff, function () { existingTask.indent(); });
+        } else if (levelDiff < 0) { // outdent
+          _.times(-1 * levelDiff, function () { existingTask.outdent(); });
+        }
+        var newParent = existingTask.getParent();
+        ge.editor.refreshExpandStatus(existingTask);
+        if (oldParent) ge.editor.refreshExpandStatus(oldParent);
+        if (newParent) {
+          ge.editor.refreshExpandStatus(newParent);
+          if (newParent.isCollapsed()) {
+            existingTask.rowElement.hide();
+          } else {
+            existingTask.rowElement.show();
+          }
+        }
+      }
+    }
+
+    // collapsed
+    if (!_.isNil(t.collapsed) && t.collapsed !== _.defaultTo(existingTask.collapsed, false)) {
+      if (t.collapsed) {
+        ge.collapse(existingTask, false);
+      } else {
+        ge.expand(existingTask, false);
+      }
+    }
+
+    if (!_.isNil(t.start) || !_.isNil(t.end) || (!_.isNil(t.duration) && !_.isNaN(t.duration) && t.duration > 0)) {
+      // start, end, duration
+      var dates = resynchDatesLogically(ge.schedulingDirection, t.start, t.end, t.duration, existingTask);
+      ge.changeTaskDates(existingTask, dates.start, dates.end);
+    }
+
+  });
+
+  var getTaskIndexCached = _.memoize(function (id) { return _.findIndex(ge.tasks, {id: id}); });
+
+  // now update the dependencies
+  var groupedDeps = _.groupBy(deps, 'to');
+  _.each(groupedDeps, function (newDeps, to) {
+
+    var taskToUpdateDeps = _.find(ge.tasks, {id: to});
+    if (!taskToUpdateDeps) return true; // continue
+
+    var existingDeps = [];
+    taskToUpdateDeps.depends = _.trim(taskToUpdateDeps.depends);
+    if (taskToUpdateDeps.depends != "") {
+      _.each(_.split(taskToUpdateDeps.depends, ','), function (d) {
+        var parts = _.split(d, ':');
+        existingDeps.push({from: _.trim(parts[0]), buffer: parts.length > 1 ? _.parseInt(parts[1]) : 0});
+      });
+    }
+
+    _.each(newDeps, function (d) {
+      d.from = _.toString(getTaskIndexCached(d.from));
+      if (d.delete) { // remove exisiting dependecy
+        _.remove(existingDeps, {from: d.from});
+      } else {
+        var existingDep = _.find(existingDeps, {from: d.from});
+        if (existingDep) { // update the buffer of an existent dependency
+          if (!_.isNil(d.buffer) && !_.isNaN(d.buffer) && d.buffer >= 0) { 
+            existingDep.buffer = d.buffer;
+          }
+        } else { // add a new dependency
+          existingDeps.push({from: d.from, buffer: _.defaultTo(d.buffer, 0)});
+        }
+      }
+    });
+    var newDepString = _.join(_.map(existingDeps, function (d) { return d.from + ((d.buffer > 0) ? ":" + d.buffer : ""); }), ",");
+
+    var oldDeps = taskToUpdateDeps.depends;
+    taskToUpdateDeps.depends = newDepString;
+
+    // update links
+    var linkOK = ge.updateLinks(taskToUpdateDeps);
+    if (linkOK) {
+      ge.changeTaskDeps(taskToUpdateDeps);
+    } else {
+      taskToUpdateDeps.depends = oldDeps;
+      return true; // continue
+    }
+
+  });
+
+  ge.redraw();
 };
 
 function sendClassiXEvent(eventType, args) {

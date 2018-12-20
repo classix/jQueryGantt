@@ -95,7 +95,7 @@ Task.prototype.clone = function () {
 };
 
 //<%---------- SET PERIOD ---------------------- --%>
-Task.prototype.setPeriod = function (start, end, force) {
+Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
 
   //console.debug("setPeriod ",this.code,this.name,new Date(start), new Date(end));
   //var profilerSetPer = new Profiler("gt_setPeriodJS");
@@ -130,7 +130,7 @@ Task.prototype.setPeriod = function (start, end, force) {
   }
 
   if (newDuration == this.duration) { // is shift
-      return this.moveTo(backward ? end: start, false);
+    return this.moveTo(backward ? end : start, ignoreMilestones);
   }
 
   //console.debug("setStart",date,date instanceof Date);
@@ -383,7 +383,7 @@ Task.prototype.propagateToInferiors = function (end) {
     for (var i = 0; i < infs.length; i++) {
       var link = infs[i];
       if (!link.to.canWrite) {
-        this.master.setErrorOnTransaction(GanttMaster.messages["CANNOT_WRITE"] + "\n\"" + link.to.name + "\"", link.to);
+        this.master.setErrorOnTransaction(GanttMaster.messages.CANNOT_WRITE + "\n\"" + link.to.name + "\"", link.to);
         break;
       }
       todoOk = link.to.moveTo(end, false); //this is not the right date but moveTo checks start
@@ -746,6 +746,12 @@ Task.prototype.isParent = function () {
   return ret;
 };
 
+Task.prototype.isCollapsed = function () {
+  var parent = this.getParent();
+  if (!parent) return this.collapsed;
+  return this.collapsed || parent.isCollapsed();
+};
+
 
 Task.prototype.getChildren = function () {
   var ret = [];
@@ -952,8 +958,6 @@ Task.prototype.indent = function () {
       var new_end = computeEndByDuration(parent.start, this.duration);
       this.master.changeTaskDates(this, parent.start, new_end);
     }
-
-
 
     //recompute depends string
     this.master.updateDependsStrings();

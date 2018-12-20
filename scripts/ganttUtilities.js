@@ -396,7 +396,8 @@ function recomputeDuration(start, end) {
 }
 
 
-function resynchDates(backward, leavingField, startField, startMilesField, durationField, endField, endMilesField) {
+function resynchDates(schedulingDir, leavingField, startField, startMilesField, durationField, endField, endMilesField) {
+  var backward = schedulingDir === GanttConstants.SCHEDULE_DIR.BACKWARD;
   //console.debug("resynchDates",leavingField.prop("name"), startField.prop("name"), startMilesField.prop("name"), durationField.prop("name"), endField.prop("name"), endMilesField.prop("name"));
   function resynchDatesSetFields(command) {
     //console.debug("resynchDatesSetFields",command);
@@ -495,6 +496,87 @@ function resynchDates(backward, leavingField, startField, startMilesField, durat
       ret = resynchDatesSetFields("CHANGE_DURATION");
     }
   }
+  return ret;
+}
+
+/*
+b: backward, e: end, d: duration, s: start
+
+b e d s -formulas no. ---- formulas (start, end) -------
+0 0 0 1       1       newStart, newStart + oldDuration       
+0 0 1 0       2       oldStart, oldStart + newDuration
+0 0 1 1       3       newStart, newStart + newDuration
+0 1 0 0       4       newEnd - oldDuration, newEnd
+0 1 0 1       5       newStart, newEnd
+0 1 1 0       2       oldStart, oldStart + newDuration
+0 1 1 1       3       newStart, newStart + newDuration
+-------------------------------------------------------
+1 0 0 1       1       newStart, newStart + oldDuration
+1 0 1 0       6       oldEnd - newDuration, oldEnd
+1 0 1 1       6       oldEnd - newDuration, oldEnd
+1 1 0 0       4       newEnd - oldDuration, newEnd
+1 1 0 1       5       newStart, newEnd
+1 1 1 0       7       newEnd - newDuration, newEnd
+1 1 1 1       7       newEnd - newDuration, newEnd
+
+This is the logical table used in the function resynchDatesLogically, to determine how to compute the new dates
+of a task upon an update request, which may include a diverse combination of start, end and duration.
+
+*/
+function resynchDatesLogically (schedulingDir, newStart, newEnd, newDuration, originalTask) {
+
+  var backward = schedulingDir === GanttConstants.SCHEDULE_DIR.BACKWARD;
+  var startIsDefined = !_.isNil(newStart);
+  var endIsDefined = !_.isNil(newEnd);
+  var durationIsDefined = !_.isNil(newDuration) && !_.isNaN(newDuration) && newDuration > 0;
+  var ret = {};
+  var tmpDate;
+  var oldDuration = originalTask.duration - 1;
+  if (durationIsDefined) {
+    newDuration = newDuration - 1;
+  }
+
+  if (startIsDefined) {
+    tmpDate = new Date(newStart);
+    tmpDate.setHours(0,0,0,0);
+    newStart = tmpDate.getTime();
+  } 
+
+  if (endIsDefined) {
+    tmpDate = new Date(newEnd);
+    tmpDate.setHours(23,59,59,999);
+    newEnd = tmpDate.getTime();
+  } 
+
+  if (startIsDefined && !endIsDefined && !durationIsDefined) { // move the start
+    ret.start = newStart;
+    ret.end = (new Date(newStart)).incrementDateByWorkingDays(oldDuration).getTime();
+  } else if (endIsDefined && !startIsDefined && !durationIsDefined) { // move the end
+    ret.start = (new Date(newEnd)).decrementDateByWorkingDays(oldDuration).getTime();
+    ret.end = newEnd;
+  } else if (endIsDefined && startIsDefined && !durationIsDefined) { // change the start and the end
+    ret.start = newStart;
+    ret.end = newEnd;
+  } else {
+    if (!backward) { // forward scheduling
+      if (!startIsDefined && durationIsDefined) { // ignore end, use old start
+        ret.start = originalTask.start;
+        ret.end = (new Date(originalTask.start)).incrementDateByWorkingDays(newDuration).getTime();
+      } else if (startIsDefined && durationIsDefined) { // ignore end, use new start
+        ret.start = newStart;
+        ret.end = (new Date(newStart)).incrementDateByWorkingDays(newDuration).getTime();
+      }
+    } else { // backward scheduling
+      if (!endIsDefined && durationIsDefined) { // ignore start, use old end
+        ret.start = (new Date(originalTask.end)).decrementDateByWorkingDays(newDuration).getTime();
+        ret.end = originalTask.end;
+      } else if (endIsDefined && durationIsDefined) { // ignore start, use new end
+        ret.start = (new Date(newEnd)).decrementDateByWorkingDays(newDuration).getTime();
+        ret.end = newEnd;
+      }
+    }
+  }
+
   return ret;
 }
 

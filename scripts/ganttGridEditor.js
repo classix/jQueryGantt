@@ -156,17 +156,23 @@ GridEditor.prototype.refreshTaskRow = function (task) {
 
   row.find(".taskRowIndex").html(task.getRow() + 1);
   row.find(".indentCell").css("padding-left", task.level * 10 + 18);
-  row.find("[name=name]").val(task.name);
-  row.find("[name=code]").val(task.code);
+  row.find("[name=name]").val(task.name).prop("readonly",!canWrite);
+  row.find("[name=code]").val(task.code).prop("readonly",!canWrite);
   row.find("[status]").attr("status", task.status);
 
-  row.find("[name=duration]").val(task.duration);
+  row.find("[name=duration]").val(task.duration).prop("readonly",!canWrite);
   row.find("[name=progress]").val(task.progress).prop("readonly",!canWrite || task.progressByWorklog==true);
-  row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone);
-  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite || !task.canWrite  && !GanttMaster.permissions.canWrite ); // called on dates only because for other field is called on focus event
-  row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone);
-  row.find("[name=end]").val(new Date(task.end).format()).updateOldValue();
-  row.find("[name=depends]").val(task.depends);
+  row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone).prop("disabled",!canWrite);
+  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite); // called on dates only because for other field is called on focus event
+  row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone).prop("disabled",!canWrite);
+  row.find("[name=end]").val(new Date(task.end).format()).updateOldValue().prop("readonly",!canWrite);
+  row.find("[name=depends]").val(task.depends).prop("readonly",!canWrite || !GanttMaster.permissions.canSeeDep);
+
+  if (canWrite && !row.data('inputEventsBound')) {
+    this.bindRowInputEvents(task, row);
+  } else if (!canWrite && row.data('inputEventsBound')) {
+    this.unbindRowInputEvents(row);
+  }
 
   //manage collapsed
   if (task.collapsed)
@@ -229,7 +235,6 @@ GridEditor.prototype.bindRowEvents = function (task, taskRow) {
 
   if (GanttMaster.permissions.canWrite && task.canWrite) {
     self.bindRowInputEvents(task, taskRow);
-
   } else { //cannot write: disable input
     taskRow.find("input").prop("readonly", true);
     taskRow.find("input:checkbox,select").prop("disabled", true);
@@ -255,6 +260,26 @@ GridEditor.prototype.bindRowExpandEvents = function (task, taskRow) {
       self.master.collapse(task,false);
     }
   });
+};
+
+GridEditor.prototype.unbindRowInputEvents = function (taskRow) {
+  
+  taskRow.find(".date").each(function () {
+    
+    var el = $(this);
+
+    if (el.datepicker) { el.datepicker("destroy"); }
+
+    el.off('focus');
+    el.off('blur');
+  });
+
+  taskRow.find(":checkbox").off('click');
+  taskRow.find("input:text:not(.date)").off('focus').off('blur').off('keyup');
+  taskRow.find("input").off('keydown').off('focus');
+  taskRow.find(".taskStatus").off('click');
+
+  taskRow.data('inputEventsBound', false);
 };
 
 GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
@@ -289,7 +314,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           //console.debug("resynchDates",new Date(dates.start), new Date(dates.end),dates.duration)
           //update task from editor
           self.master.beginTransaction();
-          self.master.changeTaskDates(task, dates.start, dates.end);
+          self.master.changeTaskDates(task, dates.start, dates.end, true);
           self.master.endTransaction();
           inp.updateOldValue(); //in order to avoid multiple call if nothing changed
         }
@@ -340,33 +365,32 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         var oldDeps = task.depends;
         task.depends = el.val();
 
-
         // update links
         var linkOK = self.master.updateLinks(task);
         if (linkOK) {
-          //synchronize status from superiors states
-          var sups = task.getSuperiors();
-
-
-/*
-          for (var i = 0; i < sups.length; i++) {
-            if (!sups[i].from.synchronizeStatus())
-              break;
-          }
-*/
-
-          var oneFailed=false;
-          var oneUndefined=false;
-          var oneActive=false;
-          var oneSuspended=false;
-          for (var i = 0; i < sups.length; i++) {
-            oneFailed=oneFailed|| sups[i].from.status=="STATUS_FAILED";
-            oneUndefined=oneUndefined|| sups[i].from.status=="STATUS_UNDEFINED";
-            oneActive=oneActive|| sups[i].from.status=="STATUS_ACTIVE";
-            oneSuspended=oneSuspended|| sups[i].from.status=="STATUS_SUSPENDED";
-          }
 
           if (self.master.useStatus) {
+            //synchronize status from superiors states
+            var sups = task.getSuperiors();
+
+            /*
+            for (var i = 0; i < sups.length; i++) {
+              if (!sups[i].from.synchronizeStatus())
+                break;
+            }
+            */
+
+            var oneFailed=false;
+            var oneUndefined=false;
+            var oneActive=false;
+            var oneSuspended=false;
+            for (var i = 0; i < sups.length; i++) {
+              oneFailed=oneFailed|| sups[i].from.status=="STATUS_FAILED";
+              oneUndefined=oneUndefined|| sups[i].from.status=="STATUS_UNDEFINED";
+              oneActive=oneActive|| sups[i].from.status=="STATUS_ACTIVE";
+              oneSuspended=oneSuspended|| sups[i].from.status=="STATUS_SUSPENDED";
+            }
+
             if (oneFailed){
               task.changeStatus("STATUS_FAILED");
             } else if (oneUndefined){
@@ -378,14 +402,17 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
             } else {
               task.changeStatus("STATUS_ACTIVE");
             }
+
           }
 
           self.master.changeTaskDeps(task); //dates recomputation from dependencies
+        } else {
+          task.depends = oldDeps;
         }
 
       } else if (field == "duration") {
         var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
-        self.master.changeTaskDates(task, dates.start, dates.end);
+        self.master.changeTaskDates(task, dates.start, dates.end, true);
       } else if (field == "name" && el.val() == "") { // remove unfilled task
         par = task.getParent();
         task.deleteTask();
@@ -519,5 +546,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     });
     el.after(changer);
   });
+
+  taskRow.data('inputEventsBound', true);
 
 };

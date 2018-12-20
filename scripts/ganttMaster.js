@@ -577,8 +577,8 @@ GanttMaster.prototype.changeTaskDeps = function (task) {
   }
 };
 
-GanttMaster.prototype.changeTaskDates = function (task, start, end) {
-  return task.setPeriod(start, end);
+GanttMaster.prototype.changeTaskDates = function (task, start, end, ignoreMilestones) {
+  return task.setPeriod(start, end, false, ignoreMilestones);
 };
 
 
@@ -600,6 +600,7 @@ GanttMaster.prototype.taskIsChanged = function () {
     master.editor.redraw();
     master.gantt.refreshGantt();
     master.element.trigger("gantt.refreshGanttCompleted");
+    // send the updated data to ClassiX Core
     if (master.autoUpdate) {
       updateGantt();
     }
@@ -935,6 +936,11 @@ GanttMaster.prototype.indentCurrentTask = function () {
     self.beginTransaction();
     self.currentTask.indent();
     self.endTransaction();
+
+    var newParent = self.currentTask.getParent();
+    if (newParent && newParent.isCollapsed()) {
+      self.currentTask.rowElement.hide();
+    }
   }
 };
 
