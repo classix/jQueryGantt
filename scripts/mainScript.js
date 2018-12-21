@@ -108,6 +108,9 @@ var setOptions = function (options) {
       var project = ge.saveProject();
       applyOptions();
       ge.reset();
+      if (!_.isNil(ganttOptions.zoom)) {
+        project.zoom = ganttOptions.zoom;
+      }
       ge.loadProject(project, true);
       ge.checkpoint(); //empty the undo stack
     }
@@ -383,6 +386,13 @@ var updateTasksAndDeps = function (tasks, deps, selectedTaskId) {
   });
 
   ge.redraw();
+
+  if (!_.isNil(selectedTaskId)) {
+    var selTask = _.find(ge.tasks, {id: selectedTaskId});
+    if (selTask) {
+      selTask.rowElement.click();
+    }
+  }
 };
 
 function sendClassiXEvent(eventType, args) {
