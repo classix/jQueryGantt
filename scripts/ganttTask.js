@@ -309,7 +309,7 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
       for (var i = 0; i < children.length; i++) {
         ch = children[i];
         var chDate = new Date(ch[backward? "end" :"start"]).incrementDateByWorkingDays(panDeltaInWD);
-        if (!ch.moveTo(chDate, false)) {
+        if (!ch.moveTo(chDate, false, ch.isParent())) {
           return false;
         }
       }
