@@ -1310,6 +1310,10 @@ GanttMaster.prototype.undo = function () {
     //show/hide save button
     this.saveRequired();
 
+    // send the update message to ClassiX Core
+    if (this.autoUpdate) {
+      updateGantt();
+    }
     //console.debug("undo after:",this.__undoStack,this.__redoStack);
   }
 };
@@ -1327,6 +1331,11 @@ GanttMaster.prototype.redo = function () {
     //console.debug("redo after:",undoStack,redoStack);
 
     this.saveRequired();
+
+    // send the update message to ClassiX Core
+    if (this.autoUpdate) {
+      updateGantt();
+    }
   }
 };
 
