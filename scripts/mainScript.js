@@ -66,7 +66,7 @@ var receiveMessage = function (event)
     case "do_action": {
       switch(event.data.data.action) {
         case "toggle_critical_path": {
-          ge.showHideCriticalPath();
+          ge.showHideCriticalPath(event.data.data.status);
           break;
         }
         case "toggle_only_critical": {
@@ -75,6 +75,14 @@ var receiveMessage = function (event)
         }
         case "save_data": {
           saveGantt();
+          break;
+        }
+        case "fit_range_into_view": {
+          
+          break;
+        }
+        case "schedule_project": {
+          ge.scheduleProject(event.data.data.date);
           break;
         }
       }

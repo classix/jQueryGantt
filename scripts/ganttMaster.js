@@ -1120,8 +1120,16 @@ GanttMaster.prototype.collapse = function (task, all) {
 
 };
 
-GanttMaster.prototype.showHideCriticalPath = function () {
-    this.gantt.showCriticalPath = !this.gantt.showCriticalPath;
+GanttMaster.prototype.showHideCriticalPath = function (mode) {
+    
+    if (!mode || mode === 'toggle') {
+      this.gantt.showCriticalPath = !this.gantt.showCriticalPath;
+    } else if (mode === 'on') {
+      this.gantt.showCriticalPath = true;
+    } else {
+      this.gantt.showCriticalPath = false;
+    }
+    
     this.redraw();
     this.element.parent().find(".showCriticalPathButton").toggleClass("redButton");
 };
@@ -1155,6 +1163,49 @@ GanttMaster.prototype.showHideNonCriticalTasks =  function () {
   this.nonCriticalHidden = !this.nonCriticalHidden;
   this.gantt.refreshGantt();
   this.element.parent().find(".onlyCriticalTasksButton").toggleClass("redButton");
+};
+
+GanttMaster.prototype.scheduleProject = function (schedulingDate) {
+  if (this.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING) return;
+
+  var self = this;
+  var schedulingDiff = 0;
+
+  if (schedulingDate > 0) {
+
+    var taskMoved = false;
+
+    if (this.schedulingDirection === GanttConstants.SCHEDULE_DIR.FORWARD) { // forward scheduling
+      var minStart = _.minBy(this.tasks, 'start').start;
+      schedulingDiff = minStart - schedulingDate;
+      if (schedulingDiff !== 0) {
+        // move the tasks that are free from incoming links
+        _.each(this.tasks, function (t) { 
+          if (!_.find(self.links, {to: t})) { 
+            t.moveTo(t.start - schedulingDiff);
+            taskMoved = true;
+          }
+        });
+      }
+    } else { // backward scheduling
+      var maxEnd = _.maxBy(this.tasks, 'end').end;
+      schedulingDiff = schedulingDate - maxEnd;
+      if (schedulingDiff !== 0) {
+        // move the tasks that are free from outgoing links
+        _.each(this.tasks, function (t) { 
+          if (!_.find(self.links, {from: t})) {
+            t.moveTo(t.end + schedulingDiff);
+            taskMoved = true;
+          }
+        });
+      }
+    }
+
+    if (taskMoved) {
+      this.redraw();
+    }
+  }
+
 };
 
 

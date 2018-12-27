@@ -300,8 +300,6 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
       return false;
     }
 
-    
-
     //loops children to shift them in case of manual shift of a group by the user
     if (groupMove) {
       var panDeltaInWD = new Date(originalPeriod[backward ? "end" : "start"]).distanceInWorkingDays(new Date(this[backward ? "end" : "start"]));
