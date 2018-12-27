@@ -160,13 +160,21 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   row.find("[name=code]").val(task.code).prop("readonly",!canWrite);
   row.find("[status]").attr("status", task.status);
 
-  row.find("[name=duration]").val(task.duration).prop("readonly",!canWrite);
-  row.find("[name=progress]").val(task.progress).prop("readonly",!canWrite || task.progressByWorklog==true);
-  row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone).prop("disabled",!canWrite);
-  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite); // called on dates only because for other field is called on focus event
-  row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone).prop("disabled",!canWrite);
+
+  row.find("[name=start]").val(new Date(task.start).format()).updateOldValue().prop("readonly",!canWrite); // updateOldValue() called on dates only because for other field is called on focus event
   row.find("[name=end]").val(new Date(task.end).format()).updateOldValue().prop("readonly",!canWrite);
-  row.find("[name=depends]").val(task.depends).prop("readonly",!canWrite || !GanttMaster.permissions.canSeeDep);
+
+  row.find("[name=duration]").val(task.duration).prop("readonly",!canWrite || task.isParent());
+
+  if (!task.isParent()) {
+    row.find("[name=progress]").val(task.progress).prop("readonly",!canWrite || task.progressByWorklog==true).show();
+    row.find("[name=startIsMilestone]").prop("checked", task.startIsMilestone).prop("disabled",!canWrite).show();
+    row.find("[name=endIsMilestone]").prop("checked", task.endIsMilestone).prop("disabled",!canWrite).show();
+    row.find("[name=depends]").val(task.depends).prop("readonly",!canWrite || !GanttMaster.permissions.canSeeDep).show();
+  } else {
+    row.find("[name=progress], [name=startIsMilestone], [name=endIsMilestone], [name=depends]").hide();
+  }
+  
 
   if (canWrite && !row.data('inputEventsBound')) {
     this.bindRowInputEvents(task, row);
@@ -303,7 +311,6 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         if (!Date.isValid(inp.val())) {
           showErrorMsg(GanttMaster.messages.INVALID_DATE_FORMAT);
           inp.val(inp.getOldValue());
-
         } else {
           var row = inp.closest("tr");
           var taskId = row.attr("taskId");
@@ -314,7 +321,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           //console.debug("resynchDates",new Date(dates.start), new Date(dates.end),dates.duration)
           //update task from editor
           self.master.beginTransaction();
-          self.master.changeTaskDates(task, dates.start, dates.end, true);
+          self.master.changeTaskDates(task, dates.start, dates.end, true, task.isParent());
           self.master.endTransaction();
           inp.updateOldValue(); //in order to avoid multiple call if nothing changed
         }

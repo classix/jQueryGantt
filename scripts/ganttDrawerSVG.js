@@ -472,11 +472,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
         //creates gradient and definitions
         var defs = svg.defs('myDefs');
 
-
-        //create backgound
-        var extDep = svg.pattern(defs, "extDep", 0, 0, 10, 10, 0, 0, 10, 10, {patternUnits:'userSpaceOnUse'});
-        var img=svg.image(extDep, 0, 0, 10, 10, self.master.resourceUrl +"hasExternalDeps.png",{opacity:0.3});
-
         self.svg = svg;
         $(svg).addClass("ganttSVGBox");
 
@@ -565,7 +560,9 @@ Ganttalendar.prototype.drawTask = function (task) {
     taskBox
       .click(function (e) { // manages selection
         e.stopPropagation();// to avoid body remove focused
-        sendClassiXEvent(CLASSIX_EVENT_TYPE.CLICK, $(this).attr("taskid"));
+        if (!task.hasChild) {
+          sendClassiXEvent(CLASSIX_EVENT_TYPE.CLICK, $(this).attr("taskid"));
+        }
         self.element.find("[class*=focused]").removeClass("focused");
         $(".ganttSVGBox .focused").removeClass("focused");
         var el = $(this);
@@ -580,8 +577,11 @@ Ganttalendar.prototype.drawTask = function (task) {
         });
 
       }).dblclick(function () {
-        sendClassiXEvent(CLASSIX_EVENT_TYPE.DB_CLICK, $(this).attr("taskid"));
+        if (!task.hasChild) {
+          sendClassiXEvent(CLASSIX_EVENT_TYPE.DB_CLICK, $(this).attr("taskid"));
+        }
       }).mouseenter(function () {
+        if (task.hasChild) return; // don't fire this event on groups
         //bring to top
         var el = $(this);
         if (!self.linkOnProgress) {
@@ -590,6 +590,7 @@ Ganttalendar.prototype.drawTask = function (task) {
           el.addClass("linkOver");
         }
       }).mouseleave(function (e) {
+        if (task.hasChild) return; // don't fire this event on groups
         var el = $(this);
         var pos = el.position();
         var dims = el[0].getBBox();
@@ -606,7 +607,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         task.rowElement.click();
       }).dragExtedSVG($(self.svg.root()), {
         minSize: self.fx * 3600 * 1000 * 24,
-        canResize:  GanttMaster.permissions.canWrite && task.canWrite,
+        canResize:  GanttMaster.permissions.canWrite && task.canWrite && !task.hasChild,
         canDrag:    GanttMaster.permissions.canWrite && task.canWrite,
         startDrag:  function (e) {
           $(".ganttSVGBox .focused").removeClass("focused");
@@ -700,14 +701,18 @@ Ganttalendar.prototype.drawTask = function (task) {
           }
           var text = taskBox.data("textDur");
           text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(Math.max(d,1));
-          var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite');
+          var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite, .taskLabelSVGBlack');
           var padding = 5;
           var textWidth = label[0].getBBox().width;
 
           if (textWidth + 2 * padding <= taskBoxWidth) {
-            label.attr('transform', 'translate(-' + (taskBoxWidth/2 + textWidth/2)  + ',-3)').addClass('taskLabelSVGWhite').removeClass('taskLabelSVG');
+            label.attr('transform', 'translate(-' + (taskBoxWidth/2 + textWidth/2)  + ',-3)');
+            if (!task.hasChild)
+              label.addClass('taskLabelSVGWhite').removeClass('taskLabelSVG');
           } else {
-            label.attr('transform', 'translate(20,-3)').addClass('taskLabelSVG').removeClass('taskLabelSVGWhite');
+            label.attr('transform', 'translate(20,-3)');
+            if (!task.hasChild)
+              label.addClass('taskLabelSVG').removeClass('taskLabelSVGWhite');
           }
 
           $("[from=\"" + task.id + "\"],[to=\"" + task.id + "\"]").trigger("update");
@@ -804,60 +809,71 @@ Ganttalendar.prototype.drawTask = function (task) {
   function _createTaskSVG(task, dimensions) {
     var svg = self.svg;
 
-    var attribs = {
-      class: "taskBox taskBoxSVG",
-      taskid: task.id,
-      fill: task.color || self.master.defaultTaskColor || "#eee",
-    };
+    var taskSvg;
 
-    attribs.stroke = tinycolor(attribs.fill).darken(10).toString();
-    
-    if (self.master.useStatus) {
-      attribs.status = task.status;
-      attribs.class += " taskStatusSVG";
-    }
+    if (!task.hasChild) { // normal task
 
-    var taskSvg = svg.svg(self.tasksGroup, dimensions.x, dimensions.y, dimensions.width, dimensions.height, attribs);
+      var attribs = {
+        class: "taskBox taskBoxSVG",
+        taskid: task.id,
+        fill: task.color || self.master.defaultTaskColor || "#eee",
+      };
+  
+      attribs.stroke = tinycolor(attribs.fill).darken(10).toString();
+      
+      if (self.master.useStatus) {
+        attribs.status = task.status;
+        attribs.class += " taskStatusSVG";
+      }
+  
+      taskSvg = svg.svg(self.tasksGroup, dimensions.x, dimensions.y, dimensions.width, dimensions.height, attribs);
+  
+      if (!_.isNil(task.tooltip) && !_.isEmpty(task.tooltip)) {
+        svg.title(taskSvg, task.tooltip);
+      }
 
-    //svg.title(taskSvg, task.name);
-    //external box
-    var layout = svg.rect(taskSvg, 0, 0, "100%", "100%", {class:"taskLayout", rx:"2", ry:"2"});
+      //external box
+      var layout = svg.rect(taskSvg, 0, 0, "100%", "100%", {class:"taskLayout", rx:"2", ry:"2"});
 
-    //svg.rect(taskSvg, 0, 0, "100%", "100%", {fill:"rgba(255,255,255,.3)"});
+      //svg.rect(taskSvg, 0, 0, "100%", "100%", {fill:"rgba(255,255,255,.3)"});
 
-    //external dep
-    if (task.hasExternalDep)
-      svg.rect(taskSvg, 0, 0, "100%", "100%", {fill:"url(#extDep)"});
+      //progress
+      if (task.progress > 0) {
+        var progress = svg.rect(taskSvg, 0, 0, (task.progress > 100 ? 100 : task.progress) + "%", "100%", {rx:"2", ry:"2", fill:"rgba(0,0,0,)"});
+      }
 
-    //progress
-    if (task.progress > 0) {
-      var progress = svg.rect(taskSvg, 0, 0, (task.progress > 100 ? 100 : task.progress) + "%", "100%", {rx:"2", ry:"2", fill:"rgba(0,0,0,)"});
-    }
-
-    if (task.hasChild)
+      if (task.startIsMilestone) {
+        svg.image(taskSvg, -9, dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png");
+      }
+  
+      if (task.endIsMilestone) {
+        svg.image(taskSvg, "100%",dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png", {transform:"translate(-9)"});
+      }
+    } else { // group
+      taskSvg = svg.svg(self.tasksGroup, dimensions.x, dimensions.y, dimensions.width, dimensions.height, {taskid: task.id, class: "taskBox taskBoxSVG"});
+      if (!_.isNil(task.tooltip) && !_.isEmpty(task.tooltip)) {
+        svg.title(taskSvg, task.tooltip);
+      }
+      svg.rect(taskSvg, 0, 0, "100%", 3, {class:"taskLayout"});
       svg.rect(taskSvg, 0, 0, "100%", 3, {fill:"#000"});
-
-    if (task.startIsMilestone) {
-      svg.image(taskSvg, -9, dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png");
-    }
-
-    if (task.endIsMilestone) {
-      svg.image(taskSvg, "100%",dimensions.height/2-9, 18, 18, self.master.resourceUrl +"milestone.png", {transform:"translate(-9)"});
-    }
+      svg.polygon(taskSvg, [[0,1],[0,6],[6,1]],  
+        {fill: '#000', stroke: '#000', strokeWidth: 1});
+      svg.polygon(taskSvg, [[dimensions.width,1],[dimensions.width,6],[dimensions.width - 6,1]],  
+        {fill: '#000', stroke: '#000', strokeWidth: 1});
+    }    
 
     //task label
     var textElement = svg.text(taskSvg, "100%", 18, task.name);
     var padding = 5;
     var textWidth = textElement.getBBox().width;
     if (textWidth + 2 * padding <= dimensions.width) {
-      $(textElement).attr('transform', 'translate(-' + (dimensions.width/2 + textWidth/2)  + ',-3)').addClass('taskLabelSVGWhite');
+      $(textElement).attr('transform', 'translate(-' + (dimensions.width/2 + textWidth/2)  + ',-3)').addClass(task.hasChild ? 'taskLabelSVGBlack' : 'taskLabelSVGWhite');
     } else {
-      $(textElement).attr('transform', 'translate(20,-3)').addClass('taskLabelSVG');
+      $(textElement).attr('transform', 'translate(20,-3)').addClass(task.hasChild ? 'taskLabelSVGBlack' : 'taskLabelSVG');
     }
 
-
     //link tool
-    if (task.level>0){
+    if (task.level>0 && !task.hasChild){
       var margin = 4;
       svg.circle(taskSvg, 0,  dimensions.height/2,dimensions.height/3, {class:"taskLinkStartSVG linkHandleSVG", transform:"translate("+(-dimensions.height/3-margin)+")"});
       svg.circle(taskSvg, "100%",dimensions.height/2,dimensions.height/3, {class:"taskLinkEndSVG linkHandleSVG", transform:"translate("+(dimensions.height/3+margin)+")"});

@@ -95,7 +95,7 @@ Task.prototype.clone = function () {
 };
 
 //<%---------- SET PERIOD ---------------------- --%>
-Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
+Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGroup) {
 
   //console.debug("setPeriod ",this.code,this.name,new Date(start), new Date(end));
   //var profilerSetPer = new Profiler("gt_setPeriodJS");
@@ -120,6 +120,11 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
   //compute legal start/end 
   start = computeStart(start, backward);
   end = computeEnd(end, backward);
+
+  // groups can only be moved and cannot be resized on their own
+  if (isGroup) {
+    return this.moveTo(backward ? end : start, ignoreMilestones, true);
+  }
 
   var newDuration = recomputeDuration(start, end);
 
@@ -147,7 +152,6 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
       start = end;
     }
   }
-
 
   //set a legal start
   //start = computeStart(start); //todo R&S 30/3/2016 messo in vetta
@@ -203,59 +207,17 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
     return false;
   }
 
-  //external dependencies: exit with error
-  if (this.hasExternalDep) {
-    this.master.setErrorOnTransaction("\"" + this.name + "\"\n" + GanttMaster.messages.TASK_HAS_EXTERNAL_DEPS, this);
-    return false;
-  }
-
   var todoOk = true;
 
-  //I'm restricting
-  var deltaPeriod = originalPeriod.duration - this.duration;
-  var restricting = deltaPeriod > 0;
-  var restrictingStart = restricting && (originalPeriod.start < this.start);
-  var restrictingEnd = restricting && (originalPeriod.end > this.end);
+  //check global boundaries
+  if (this.start < this.master.minEditableDate || this.end > this.master.maxEditableDate) {
+    this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages.CHANGE_OUT_OF_SCOPE, this);
+    todoOk = false;
+  }
 
-  //console.debug( " originalPeriod.duration "+ originalPeriod.duration +" deltaPeriod "+deltaPeriod+" "+"restricting "+restricting);
-
-  if (restricting) {
-    //loops children to get boundaries
-    var children = this.getChildren();
-    var bs = Infinity;
-    var be = 0;
-    for (var i = 0; i < children.length; i++) {
-
-      var ch = children[i];
-      //console.debug("restricting: test child "+ch.name+" "+ch.end)
-      if (restrictingEnd) {
-        be = Math.max(be, ch.end);
-      } else {
-        bs = Math.min(bs, ch.start);
-      }
-    }
-
-    if (restrictingEnd) {
-      //console.debug("restricting end ",be, this.end);
-      this.end = Math.max(be, this.end);
-    } else {
-      //console.debug("restricting start");
-      this.start = Math.min(bs, this.start);
-    }
-
-    this.duration = recomputeDuration(this.start, this.end);
-  } else {
-
-    //check global boundaries
-    if (this.start < this.master.minEditableDate || this.end > this.master.maxEditableDate) {
-      this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages.CHANGE_OUT_OF_SCOPE, this);
-      todoOk = false;
-    }
-
-    //console.debug("set period: somethingChanged",this);
-    if (todoOk && !updateTree(this)) {
-      todoOk = false;
-    }
+  //console.debug("set period: somethingChanged",this);
+  if (todoOk && !updateTree(this)) {
+    todoOk = false;
   }
 
   if (todoOk) {
@@ -270,7 +232,7 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones) {
 
 
 //<%---------- MOVE TO ---------------------- --%>
-Task.prototype.moveTo = function (date, ignoreMilestones) {
+Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
   //console.debug("moveTo ",this.code,this.name,new Date(start),this.duration,ignoreMilestones);
   //var profiler = new Profiler("gt_task_moveTo");
 
@@ -295,11 +257,7 @@ Task.prototype.moveTo = function (date, ignoreMilestones) {
     //notify error
     this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages[backward ? "END_IS_MILESTONE" : "START_IS_MILESTONE"], this);
     return false;
-  } else if (this.hasExternalDep) {
-    //notify error
-    this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages.TASK_HAS_EXTERNAL_DEPS, this);
-    return false;
-  }
+  } 
 
   //if depends, start/end is set to max end + lag of superior
   var dateBySupInf = this[backward? "computeEndByInferiors" : "computeStartBySuperiors"](date, backward);
@@ -342,28 +300,26 @@ Task.prototype.moveTo = function (date, ignoreMilestones) {
       return false;
     }
 
+    
 
-    // bicch 22/4/2016: quando si sposta un task con child a cavallo di holidays, i figli devono essere shiftati in workingDays, non in millisecondi, altrimenti si cambiano le durate
-    // when moving children you MUST consider WORKING days,
-    var panDeltaInWD = new Date(originalPeriod[backward ? "end" : "start"]).distanceInWorkingDays(new Date(this[backward ? "end" : "start"]));
-
-    //loops children to shift them
-    var children = this.getChildren();
-    for (var i = 0; i < children.length; i++) {
-      ch = children[i];
-      var chDate = new Date(ch[backward? "end" :"start"]).incrementDateByWorkingDays(panDeltaInWD);
-      if (!ch.moveTo(chDate, false)) {
-        //console.debug("esco")
-        return false;
+    //loops children to shift them in case of manual shift of a group by the user
+    if (groupMove) {
+      var panDeltaInWD = new Date(originalPeriod[backward ? "end" : "start"]).distanceInWorkingDays(new Date(this[backward ? "end" : "start"]));
+      var children = this.getChildren();
+      for (var i = 0; i < children.length; i++) {
+        ch = children[i];
+        var chDate = new Date(ch[backward? "end" :"start"]).incrementDateByWorkingDays(panDeltaInWD);
+        if (!ch.moveTo(chDate, false)) {
+          return false;
+        }
       }
     }
 
+  }
 
-    //console.debug("set period: somethingChanged",this);
-    if (!updateTree(this)) {
-      return false;
-    }
-
+  //console.debug("set period: somethingChanged",this);
+  if (!updateTree(this)) {
+    return false;
   }
 
   if (backward) {
@@ -459,31 +415,17 @@ function updateTree(task) {
   if (!p)
     return true;
 
-  var newStart = p.start;
-  var newEnd = p.end;
-
-  if (p.start > task.start) {
-    if (p.startIsMilestone) {
-      task.master.setErrorOnTransaction("\"" + p.name + "\"\n" + GanttMaster.messages.START_IS_MILESTONE, task);
-      return false;
-    } else if (p.depends) {
-      task.master.setErrorOnTransaction("\"" + p.name + "\"\n" + GanttMaster.messages.TASK_HAS_CONSTRAINTS, task);
-      return false;
-    }
-
-    newStart = task.start;
-  }
-  if (p.end < task.end) {
-    if (p.endIsMilestone) {
-      task.master.setErrorOnTransaction("\"" + p.name + "\"\n" + GanttMaster.messages.END_IS_MILESTONE, task);
-      return false;
-    }
-
-    newEnd = task.end;
+  var children = p.getChildren();
+  var bs = Infinity;
+  var be = 0;
+  for (var i = 0; i < children.length; i++) {
+    var ch = children[i];
+    be = Math.max(be, ch.end);
+    bs = Math.min(bs, ch.start);
   }
 
   //propagate updates if needed
-  if (newStart != p.start || newEnd != p.end) {
+  if (bs != p.start || be != p.end) {
 
     //can write?
     if (!p.canWrite) {
@@ -491,13 +433,7 @@ function updateTree(task) {
       return false;
     }
 
-    //has external deps ?
-    if (p.hasExternalDep) {
-      task.master.setErrorOnTransaction(GanttMaster.messages.TASK_HAS_EXTERNAL_DEPS + "\n\"" + p.name + "\"", task);
-      return false;
-    }
-
-    return p.setPeriod(newStart, newEnd);
+    return p.setPeriod(bs, be);
   }
 
   return true;
@@ -837,6 +773,8 @@ Task.prototype.deleteTask = function () {
   if (this.master.currentTask && this.master.currentTask.id==this.id)
     delete this.master.currentTask;
 
+  var oldParent = this.getParent();
+
   //delete both dom elements if exists
   if (this.rowElement)
     this.rowElement.remove();
@@ -853,7 +791,6 @@ Task.prototype.deleteTask = function () {
   if (!this.isNew())
     this.master.deletedTaskIds.push(this.id);
 
-
   //remove from in-memory collection
   this.master.tasks.splice(this.getRow(), 1);
 
@@ -862,6 +799,11 @@ Task.prototype.deleteTask = function () {
   this.master.links = this.master.links.filter(function (link) {
     return link.from != task && link.to != task;
   });
+
+  var oldSiblings = oldParent.getChildren();
+  if (oldSiblings.length) {
+    updateTree(oldSiblings[0]);
+  }
 };
 
 
@@ -956,12 +898,12 @@ Task.prototype.indent = function () {
     // set start date to parent' start if no deps
     if (parent && !this.depends) {
       var new_end = computeEndByDuration(parent.start, this.duration);
-      this.master.changeTaskDates(this, parent.start, new_end);
+      this.master.changeTaskDates(this, parent.start, new_end, false, this.isParent());
     }
 
     //recompute depends string
     this.master.updateDependsStrings();
-    //enlarge parent using a fake set period
+    //change parent size 
     updateTree(this);
     if (this.master.useStatus) {
       //force status check starting from parent
@@ -981,6 +923,7 @@ Task.prototype.outdent = function () {
 
   var ret = false;
   var oldLevel = this.level;
+  var oldParent = this.getParent();
 
   ret = true;
   var row = this.getRow();
@@ -1001,17 +944,22 @@ Task.prototype.outdent = function () {
   });
 
 
-  //enlarge me if inherited children are larger
-  for (var k = 0; k < chds.length; k++) {
-    //remove links from me to my new children
-    chds[k].setPeriod(chds[k].start + 1, chds[k].end + 1);
+  // change my size according to my children
+  if (chds.length) {
+    updateTree(chds[0]);
   }
 
   //recompute depends string
   this.master.updateDependsStrings();
 
-  //enlarge parent using a fake set period
-  this.setPeriod(this.start + 1, this.end + 1);
+  // change the size of my new parents
+  updateTree(this);
+
+  // change the size of my old parents
+  var oldSiblings = oldParent.getChildren();
+  if (oldSiblings.length) {
+    updateTree(oldSiblings[0]);
+  }
 
   if (this.master.useStatus) {
     //force status check

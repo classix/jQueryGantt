@@ -409,10 +409,6 @@
     position:absolute;
   }
 
-  .taskBoxDiv .layout.extDep{
-    background-image:url(res/hasExternalDeps.png);
-  }
-
 
   .taskLabel{
     position:absolute;
@@ -716,6 +712,12 @@
   .taskLabelSVGWhite {
     stroke: none;
     fill:#fff;
+    font-size: 12px;
+  }
+
+  .taskLabelSVGBlack {
+    stroke: none;
+    fill:#000;
     font-size: 12px;
   }
 

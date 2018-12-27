@@ -242,6 +242,7 @@ GanttMaster.messages = {
   "CIRCULAR_REFERENCE":                    "CIRCULAR_REFERENCE",
   "CANNOT_MOVE_TASK":                      "CANNOT_MOVE_TASK",
   "CANNOT_DEPENDS_ON_ANCESTORS":           "CANNOT_DEPENDS_ON_ANCESTORS",
+  "CANNOT_DEPENDS_ON_GROUPS":              "CANNOT_DEPENDS_ON_GROUPS",
   "CANNOT_DEPENDS_ON_DESCENDANTS":         "CANNOT_DEPENDS_ON_DESCENDANTS",
   "INVALID_DATE_FORMAT":                   "INVALID_DATE_FORMAT",
   "GANTT_QUARTER_SHORT":                   "GANTT_QUARTER_SHORT",
@@ -317,8 +318,14 @@ GanttMaster.prototype.createTask = function (id, name, code, level, start, end, 
 
 //update depends strings
 GanttMaster.prototype.updateDependsStrings = function () {
-  //remove all deps
+  
   for (var i = 0; i < this.tasks.length; i++) {
+    // remove all links from new parents
+    var task = this.tasks[i];
+    if (task.isParent()) {
+      _.remove(this.links, function (l) { return l.from === task || l.to === task; });
+    }
+    //remove all deps (clear all deps string)
     this.tasks[i].depends = "";
   }
 
@@ -577,13 +584,13 @@ GanttMaster.prototype.changeTaskDeps = function (task) {
   }
 };
 
-GanttMaster.prototype.changeTaskDates = function (task, start, end, ignoreMilestones) {
-  return task.setPeriod(start, end, false, ignoreMilestones);
+GanttMaster.prototype.changeTaskDates = function (task, start, end, ignoreMilestones, isGroup) {
+  return task.setPeriod(start, end, false, ignoreMilestones, isGroup);
 };
 
 
 GanttMaster.prototype.moveTask = function (task, newDate) {
-  return task.moveTo(newDate, true);
+  return task.moveTo(newDate, true, task.isParent());
 };
 
 
@@ -833,7 +840,13 @@ GanttMaster.prototype.updateLinks = function (task) {
   });
 
   var todoOk = true;
-  if (task.depends) {
+
+  if (!_.isNil(task.depends) && !_.isEmpty(task.depends)) {
+
+    if (task.isParent()) {
+      this.setErrorOnTransaction(GanttMaster.messages.CANNOT_DEPENDS_ON_GROUPS + "\n\"" + task.name+"\"");
+      todoOk = false;
+    }
 
     //cannot depend from an ancestor
     var parents = task.getParents();
@@ -856,7 +869,11 @@ GanttMaster.prototype.updateLinks = function (task) {
       var sup = this.tasks[parseInt(par[0] - 1)];
 
       if (sup) {
-        if (parents && parents.indexOf(sup) >= 0) {
+        if (sup.isParent()) {
+          this.setErrorOnTransaction(GanttMaster.messages.CANNOT_DEPENDS_ON_GROUPS + "\n\"" + sup.name+"\"");
+          todoOk = false;
+        }
+        else if (parents && parents.indexOf(sup) >= 0) {
           this.setErrorOnTransaction("\""+task.name + "\"\n" + GanttMaster.messages.CANNOT_DEPENDS_ON_ANCESTORS + "\n\"" + sup.name+"\"");
           todoOk = false;
 
@@ -1347,10 +1364,8 @@ GanttMaster.prototype.computeCriticalPath = function () {
     return false;
 
   // do not consider grouping tasks
-  // OD: FIXME 18.09.2018: exclude the auto added groups also
   var tasks = this.tasks.filter(function (t) {
-    //return !t.isParent()
-    return (t.getRow() > 0) && (!t.isParent() || (t.isParent() && !t.isDependent())); //OD: isDependent without parameter will always return false !!! 
+    return !t.isParent(); 
   });
 
   // reset values
