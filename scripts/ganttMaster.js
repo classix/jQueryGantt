@@ -94,7 +94,7 @@ GanttMaster.prototype.init = function (workSpace) {
   this.gantt = new Ganttalendar("m", startDate, endDate, this, place.width() * 0.6);
 
   //setup splitter
-  self.splitter = $.splittify.init(place, this.editor.gridified, this.gantt.element, 60);
+  self.splitter = $.splittify.init(place, this.editor.gridified, this.gantt.element, 50);
   self.splitter.firstBoxMinWidth = 5;
   self.splitter.secondBoxMinWidth = 20;
 
@@ -488,6 +488,16 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
   this.endTransaction();
   var self = this;
   if (!keepScroll) {
+
+    // fit the splitter position
+    setTimeout(function () {
+      var newPercent = $(".gdfTable").width() / $("body").width() * 100;
+      if (newPercent < 50 && newPercent > 0) {
+        self.splitter.resize(newPercent);
+      }
+    });
+    
+
     if (this.includeToday) {
       this.gantt.element.oneTime(200, function () {self.gantt.centerOnToday();});
     }
