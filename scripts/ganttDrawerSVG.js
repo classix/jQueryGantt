@@ -85,6 +85,55 @@ Ganttalendar.prototype.computeScaleFactor = function (zoom, initialWidth) {
   }
 };
 
+Ganttalendar.prototype.fitRangeIntoView = function (startDate, endDate) {
+
+  // set the default values and boundaries of the dates
+
+  if (_.isNil(startDate) || startDate <= 0) {
+    // the earliest start date among all tasks
+    startDate = _.minBy(this.master.tasks, 'start').start;
+  } else {
+    if (startDate < this.startMillis) {
+      startDate = this.startMillis;
+    }
+  }
+
+  if (_.isNil(endDate) || endDate <= 0) {
+    // the latest end date among all tasks
+    endDate = _.maxBy(this.master.tasks, 'end').end;
+  } else {
+    if (endDate > this.endMillis) {
+      endDate = this.endMillis;
+    }
+  }
+
+  if (startDate > endDate) {
+    var tmp = endDate;
+    endDate = startDate;
+    startDate = tmp;
+  }
+
+  var rangeDuration = endDate - startDate;
+  var viewPortWidth = $(".splitBox2").width();
+
+  var availableMillis = 0;
+  for (var zoom = 0; zoom <= 9; zoom++) {
+    availableMillis = viewPortWidth / this.computeScaleFactor(this.zoomLevels[zoom]);
+    if (rangeDuration <= availableMillis) break;
+  }
+
+  // if the duration is so long that no appropriate zoom has been found, use the highest zoom level.
+  if (zoom === 10) zoom = 9;
+
+  //change the zoom level
+  this.zoom = this.zoomLevels[zoom];
+  this.refreshGantt();
+
+  // scroll to make the tasks in the middle of the view
+  this.goToMillis(startDate + rangeDuration / 2);
+
+};
+
 
 Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEndMillis) {
   //console.log("Gantt.create " + zoom + " - " + new Date(originalStartmillis) + " - " + new Date(originalEndMillis));

@@ -78,7 +78,7 @@ var receiveMessage = function (event)
           break;
         }
         case "fit_range_into_view": {
-          
+          ge.gantt.fitRangeIntoView(event.data.data.rangeStart, event.data.data.rangeEnd);
           break;
         }
         case "schedule_project": {
