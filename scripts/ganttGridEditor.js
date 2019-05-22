@@ -51,21 +51,28 @@ GridEditor.prototype.fillEmptyLines = function () {
 
     //click on empty row create a task and fill above
     emptyRow.click(function (ev) {
-      //console.debug("emptyRow.click")
+
       var emptyRow = $(this);
       //add on the first empty row only
       if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd || emptyRow.prevAll(".emptyRow").length > 0)
         return;
 
+      // we use the separated form of transaction building (with beginTransaction and endTransaction) rather than 
+      // the compact form of registerTransaction because it's difficult to cache this event and repeat it. After a possible rollback,
+      // the order of the rows is not the same. Easier and more effective ist to create a task directly in a range, from which we
+      // know that it has holiday information.
       master.beginTransaction();
-      var lastTask;
-      var start = new Date().getTime();
-      var end = new Date().getTime();
-      var level = 0;
+      var lastTask, start, end, level;
+
+      
       if (master.tasks[0]) {
         start = master.tasks[0].start;
         end = master.tasks[0].end;
         level = master.tasks[0].level + 1;
+      } else {
+        start = GanttMaster.getNearstDateWithHolidayInfo(new Date().getTime(), 0.5);
+        end = start;
+        level = 0;
       }
 
       //fill all empty previouses
@@ -210,6 +217,7 @@ GridEditor.prototype.redraw = function () {
 
 GridEditor.prototype.reset = function () {
   this.element.find("[taskid]").remove();
+  $('#ui-datepicker-div').hide();
 };
 
 
@@ -314,15 +322,18 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
         } else {
           var row = inp.closest("tr");
           var taskId = row.attr("taskId");
-          var task = self.master.getTask(taskId);
-
-          var leavingField = inp.prop("name");
+          var cachedParameter = {
+            taskId: taskId
+          };
           var dates = resynchDates(self.master.schedulingDirection, inp, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
           //console.debug("resynchDates",new Date(dates.start), new Date(dates.end),dates.duration)
           //update task from editor
-          self.master.beginTransaction();
-          self.master.changeTaskDates(task, dates.start, dates.end, true, task.isParent());
-          self.master.endTransaction();
+          cachedParameter.start = _.cloneDeep(dates.start);
+          cachedParameter.end = _.cloneDeep(dates.end);
+          self.master.registerTransaction(function () {
+            var task = self.master.getTask(cachedParameter.taskId);
+            self.master.changeTaskDates(task, cachedParameter.start, cachedParameter.end, true, task.isParent());
+          });
           inp.updateOldValue(); //in order to avoid multiple call if nothing changed
         }
       }
@@ -337,17 +348,25 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     var row = el.closest("tr");
     var taskId = row.attr("taskId");
 
-    var task = self.master.getTask(taskId);
-
     //update task from editor
     var field = el.prop("name");
 
+    var cachedParameter = {
+      taskId: taskId,
+      field: field,
+      checked: el.prop("checked")
+    };
+
     if (field == "startIsMilestone" || field == "endIsMilestone") {
-      self.master.beginTransaction();
-      //milestones
-      task[field] = el.prop("checked");
-      resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
-      self.master.endTransaction();
+      self.master.registerTransaction(function () {
+        //milestones
+        var task = self.master.getTask(cachedParameter.taskId);
+        var row = $('.taskEditRow[taskid="'+ cachedParameter.taskId + '"]');
+        var el = row.find(':checkbox[name=' + cachedParameter.field + ']');
+        task[field] = cachedParameter.checked;
+        el.prop("checked", cachedParameter.checked); 
+        resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+      });
     }
 
   });
@@ -364,79 +383,90 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
 
     var par;
 
+    var cachedParameter = {
+      taskId: taskId,
+      field: field, 
+      newValue: el.val()
+    };
+
     if (el.isValueChanged()) {
-      self.master.beginTransaction();
 
-      if (field == "depends") {
+      self.master.registerTransaction(function () {
+        var task = self.master.getTask(cachedParameter.taskId);
+        var row = $('.taskEditRow[taskid="'+ cachedParameter.taskId + '"]');
+        var el = row.find('input:text:not(.date)[name=' + cachedParameter.field + ']');
+        el.val(cachedParameter.newValue);
 
-        var oldDeps = task.depends;
-        task.depends = el.val();
-
-        // update links
-        var linkOK = self.master.updateLinks(task);
-        if (linkOK) {
-
-          if (self.master.useStatus) {
-            //synchronize status from superiors states
-            var sups = task.getSuperiors();
-
-            /*
-            for (var i = 0; i < sups.length; i++) {
-              if (!sups[i].from.synchronizeStatus())
-                break;
+        if (cachedParameter.field == "depends") {
+          
+          var oldDeps = task.depends;
+          task.depends = el.val();
+  
+          // update links
+          var linkOK = self.master.updateLinks(task);
+          if (linkOK) {
+  
+            if (self.master.useStatus) {
+              //synchronize status from superiors states
+              var sups = task.getSuperiors();
+  
+              /*
+              for (var i = 0; i < sups.length; i++) {
+                if (!sups[i].from.synchronizeStatus())
+                  break;
+              }
+              */
+  
+              var oneFailed=false;
+              var oneUndefined=false;
+              var oneActive=false;
+              var oneSuspended=false;
+              for (var i = 0; i < sups.length; i++) {
+                oneFailed=oneFailed|| sups[i].from.status=="STATUS_FAILED";
+                oneUndefined=oneUndefined|| sups[i].from.status=="STATUS_UNDEFINED";
+                oneActive=oneActive|| sups[i].from.status=="STATUS_ACTIVE";
+                oneSuspended=oneSuspended|| sups[i].from.status=="STATUS_SUSPENDED";
+              }
+  
+              if (oneFailed){
+                task.changeStatus("STATUS_FAILED");
+              } else if (oneUndefined){
+                task.changeStatus("STATUS_UNDEFINED");
+              } else if (oneActive){
+                task.changeStatus("STATUS_SUSPENDED");
+              } else  if (oneSuspended){
+                task.changeStatus("STATUS_SUSPENDED");
+              } else {
+                task.changeStatus("STATUS_ACTIVE");
+              }
+  
             }
-            */
-
-            var oneFailed=false;
-            var oneUndefined=false;
-            var oneActive=false;
-            var oneSuspended=false;
-            for (var i = 0; i < sups.length; i++) {
-              oneFailed=oneFailed|| sups[i].from.status=="STATUS_FAILED";
-              oneUndefined=oneUndefined|| sups[i].from.status=="STATUS_UNDEFINED";
-              oneActive=oneActive|| sups[i].from.status=="STATUS_ACTIVE";
-              oneSuspended=oneSuspended|| sups[i].from.status=="STATUS_SUSPENDED";
-            }
-
-            if (oneFailed){
-              task.changeStatus("STATUS_FAILED");
-            } else if (oneUndefined){
-              task.changeStatus("STATUS_UNDEFINED");
-            } else if (oneActive){
-              task.changeStatus("STATUS_SUSPENDED");
-            } else  if (oneSuspended){
-              task.changeStatus("STATUS_SUSPENDED");
-            } else {
-              task.changeStatus("STATUS_ACTIVE");
-            }
-
+  
+            self.master.changeTaskDeps(task); //dates recomputation from dependencies
+          } else {
+            task.depends = oldDeps;
           }
-
-          self.master.changeTaskDeps(task); //dates recomputation from dependencies
+  
+        } else if (field == "duration") {
+          var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+          self.master.changeTaskDates(task, dates.start, dates.end, true);
+        } else if (field == "name" && el.val() == "") { // remove unfilled task
+          par = task.getParent();
+          task.deleteTask();
+          self.fillEmptyLines();
+  
+          if (par) self.refreshExpandStatus(par);
+          self.master.gantt.synchHighlight();
+  
+  
+        } else if (field == "progress" ) {
+          task[field]=parseFloat(el.val())||0;
+          el.val(task[field]);
+  
         } else {
-          task.depends = oldDeps;
+          task[field] = el.val();
         }
-
-      } else if (field == "duration") {
-        var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
-        self.master.changeTaskDates(task, dates.start, dates.end, true);
-      } else if (field == "name" && el.val() == "") { // remove unfilled task
-        par = task.getParent();
-        task.deleteTask();
-        self.fillEmptyLines();
-
-        if (par) self.refreshExpandStatus(par);
-        self.master.gantt.synchHighlight();
-
-
-      } else if (field == "progress" ) {
-        task[field]=parseFloat(el.val())||0;
-        el.val(task[field]);
-
-      } else {
-        task[field] = el.val();
-      }
-      self.master.endTransaction();
+      });
 
     } else if (field == "name" && el.val() == "") { // remove unfilled task even if not changed
       if (task.getRow()!=0) {
@@ -543,6 +573,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
       e.stopPropagation();
       var newStatus = $(this).attr("status");
       changer.remove();
+      // here we can use begin and endTransaction because there isn't any change of duration here, so we don't need to use registerTransaction
       self.master.beginTransaction();
       task.changeStatus(newStatus);
       self.master.endTransaction();

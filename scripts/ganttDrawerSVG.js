@@ -39,7 +39,8 @@ function Ganttalendar(zoom, startmillis, endMillis, master, minGanttSize) {
 
   this.zoomLevels = [ "d", "w","w2","w3", "m","m2", "q", "q2", "s", "y"];
 
-  this.element = this.create(zoom, startmillis, endMillis);
+  var self = this;
+  this.create(zoom, startmillis, endMillis, function (elm) { self.element = elm; });
 
   this.linkOnProgress = false; //set to true when creating a new link
   this.taskHeight=20;
@@ -135,7 +136,8 @@ Ganttalendar.prototype.fitRangeIntoView = function (startDate, endDate) {
 };
 
 
-Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEndMillis) {
+Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEndMillis, callback) {
+
   //console.log("Gantt.create " + zoom + " - " + new Date(originalStartmillis) + " - " + new Date(originalEndMillis));
   //var prof = new Profiler("ganttDrawer.create");
   var self = this;
@@ -246,6 +248,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
   }
 
   function createGantt(zoom, startPeriod, endPeriod) {
+    
     var tr1 = $("<div>").addClass("ganttHead1");
     var tr2 = $("<div>").addClass("ganttHead2");
     var trBody = $("<div>").addClass("ganttBody");
@@ -379,7 +382,6 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       }
 
     } else if (zoom == "m") {
-
 
       counter = 0;
       date = new Date(startPeriod);
@@ -570,10 +572,27 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
   self.originalStartMillis = originalStartmillis; //minimal dimension required by user or by task duration
   self.originalEndMillis = originalEndMillis;
 
-  var table = createGantt(zoom, period.start, period.end);
+  // this is used as best practice, although we dont need it actually, becuase all of our parameters are passed by value
+  // but this is to inform future developers that they should think about the scope of the variables they use in a cached function
+  // using registerTransaction
+  var cachedParameter = { 
+    zoom: zoom, // number or string - copy by value
+    periodStart: period.start, // number and not Date - copy by value
+    periodEnd: period.end // number and not Date - copy by value
+  };
+
+  self.master.registerTransaction(function () {
+    var startDate = new Date(cachedParameter.periodStart).clearTime();
+    var endDate = new Date(cachedParameter.periodEnd).clearTime();
+    if (GanttMaster.isHolidayInfoAvailable(startDate, endDate)) {
+      var table = createGantt(cachedParameter.zoom, cachedParameter.periodStart, cachedParameter.periodEnd);
+      callback(table);
+    } else {
+      self.master.setHolidayErrorOnTransaction(startDate, endDate);
+    }
+  }, {lite: true});
 
   //prof.stop();
-  return table;
 };
 
 
@@ -668,6 +687,9 @@ Ganttalendar.prototype.drawTask = function (task) {
           self.resDrop = true; //hack to avoid select
           var taskbox = $(this);
           var taskid = taskbox.attr("taskid");
+          var cachedParameter = {
+            taskId: _.clone(taskid)
+          };
           var task = self.master.getTask(taskid);
           var taskIndex = self.master.getTaskIndex(task);
           var s = Math.round(parseFloat(taskbox.attr("x")) / self.fx + self.startMillis);
@@ -679,9 +701,10 @@ Ganttalendar.prototype.drawTask = function (task) {
           var infers = backward ? task.getInferiors() : null;
 
           if ((!backward && !task.depends) || (backward && !infers.length)) {
-            self.master.beginTransaction();
-            self.master.moveTask(task, new Date(s));
-            self.master.endTransaction();
+            cachedParameter.start = new Date(s);
+            self.master.registerTransaction(function () {
+              self.master.moveTask(self.master.getTask(cachedParameter.taskId), cachedParameter.start);
+            });
           } else {
             var days = (new Date(backward ? task.end : task.start)).distanceInWorkingDays(new Date(s));
             // this is needed because distanceInWorkingDays returns 1 on same dates
@@ -704,9 +727,11 @@ Ganttalendar.prototype.drawTask = function (task) {
                   dependsInp.focus();
                   dependsInp.val(newDepends).blur();
                 } else {
-                  self.master.beginTransaction();
-                  self.master.moveTask(task, new Date(backward ? task.end : task.start));
-                  self.master.endTransaction();
+                  cachedParameter.start = _.clone(task.start);
+                  cachedParameter.end = _.clone(task.end);
+                  self.master.registerTransaction(function () {
+                    self.master.moveTask(self.master.getTask(cachedParameter.taskId), new Date(backward ? cachedParameter.end : cachedParameter.start));
+                  });
                 } 
               });
             } else {
@@ -722,9 +747,11 @@ Ganttalendar.prototype.drawTask = function (task) {
                 dependsInp.focus();
                 dependsInp.val(newDepends).blur();
               } else {
-                self.master.beginTransaction();
-                self.master.moveTask(task, new Date(backward ? task.end : task.start));
-                self.master.endTransaction();
+                cachedParameter.start = _.clone(task.start);
+                cachedParameter.end = _.clone(task.end);
+                self.master.registerTransaction(function () {
+                  self.master.moveTask(self.master.getTask(cachedParameter.taskId), new Date(backward ? cachedParameter.end : cachedParameter.start));
+                });
               }
             }
           }
@@ -775,16 +802,23 @@ Ganttalendar.prototype.drawTask = function (task) {
           if (!hasNewWidth) return;
           var taskbox = $(this);
           var taskBoxWidth = taskbox.children('rect')[0].getBBox().width;
-          var task = self.master.getTask(taskbox.attr("taskid"));
+          var taskid = taskbox.attr("taskid");
+          var task = self.master.getTask(taskid);
+          var cachedParameter = {
+            taskId: _.clone(taskid),
+            taskStart: _.clone(task.start),
+            taskEnd: _.clone(task.end)
+          };
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
           var en = Math.round(((parseFloat(taskbox.attr("x")) + taskBoxWidth) / self.fx) + self.startMillis);
-          self.master.beginTransaction();
-          if (resizingFromStart) {
-            self.master.changeTaskDates(task, new Date(st + 11.99 * 3600000), task.end);
-          } else if (resizingFromEnd) {
-            self.master.changeTaskDates(task, task.start, new Date(en));
-          }
-          self.master.endTransaction();
+          self.master.registerTransaction(function () {
+            var t = self.master.getTask(cachedParameter.taskId);
+            if (resizingFromStart) {
+              self.master.changeTaskDates(t, new Date(st + 11.99 * 3600000), cachedParameter.taskEnd);
+            } else if (resizingFromEnd) {
+              self.master.changeTaskDates(t, cachedParameter.taskStart, new Date(en));
+            }
+          });
         }
       });
 
@@ -1182,22 +1216,25 @@ Ganttalendar.prototype.refreshGantt = function () {
     //"d", "w","w2","w3", "m","m2", "q", "s", "y"
     this.zoom = this.zoomLevels[days < 2 ? 0 : (days < 15 ? 1 : (days < 30 ? 2 : (days < 45 ? 3 : (days < 60 ? 4 : (days < 90 ? 5 : (days < 180 ? 6 : (days < 600 ? 7 : 8  )  )  )  ) ) ) )];
   }
-  var domEl = this.create(this.zoom, this.originalStartMillis, this.originalEndMillis);
-  this.element = domEl;
-  par.append(domEl);
+  
+  var self = this;
+  this.create(this.zoom, this.originalStartMillis, this.originalEndMillis, function (domEl) {
+    self.element = domEl;
+    par.append(domEl);
 
-  //var computedWidth = par.find('.ganttHead2 th').first().outerWidth();
-  //this.fx = this.computeScaleFactor(this.zoom, computedWidth);
+    //var computedWidth = par.find('.ganttHead2 th').first().outerWidth();
+    //this.fx = this.computeScaleFactor(this.zoom, computedWidth);
 
-  this.redrawTasks();
+    self.redrawTasks();
 
-  //set old scroll  
-  //console.debug("old scroll:",scrollX,scrollY)
-  par.scrollTop(scrollY);
-  par.scrollLeft(scrollX);
+    //set old scroll  
+    //console.debug("old scroll:",scrollX,scrollY)
+    par.scrollTop(scrollY);
+    par.scrollLeft(scrollX);
 
-  //set current task
-  this.synchHighlight();
+    //set current task
+    self.synchHighlight();
+  });
 
 };
 

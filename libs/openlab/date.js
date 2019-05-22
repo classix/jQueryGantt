@@ -531,7 +531,7 @@ Date.fromInt=function (dateInt){
 };
 
 
-Date.prototype.isHoliday=function(){
+Date.prototype.isHoliday = function () {
   return GanttMaster.isHoliday(this);
 };
 
@@ -588,7 +588,7 @@ Date.prototype.distanceInDays= function (toDate){
 // bicch 22/4/2016: modificato per far ritornare anche valori negativi, così come la controparte Java in CompanyCalendar.
 // attenzione che prima tornava 1 per due date uguali adesso torna 0
 // OD 27.02.2018: this functions returned incorrect values, so I needed to change it. It needs to return 1 day on same start and end dates.
-Date.prototype.distanceInWorkingDays= function (toDate){
+Date.prototype.distanceInWorkingDays= function (toDate) {
 
   var pos = new Date(Math.min(this,toDate));
   pos.setHours(12, 0, 0, 0);

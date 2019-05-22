@@ -59,6 +59,8 @@ function GanttMaster() {
 
   this.serverClientTimeOffset = 0;
 
+  this.proactiveMode = true; // request holiday information if missing
+
   //this.currentTask; // task currently selected;
 
   this.resourceUrl = "res/"; // URL to resources (images etc.)
@@ -247,7 +249,8 @@ GanttMaster.messages = {
   "INVALID_DATE_FORMAT":                   "INVALID_DATE_FORMAT",
   "GANTT_QUARTER_SHORT":                   "GANTT_QUARTER_SHORT",
   "GANTT_SEMESTER_SHORT":                  "GANTT_SEMESTER_SHORT",
-  "PLEASE_SAVE_PROJECT":                   "PLEASE_SAVE_PROJECT"
+  "PLEASE_SAVE_PROJECT":                   "PLEASE_SAVE_PROJECT",
+  "MISSING_HOLIDAY":                       "MISSING_HOLIDAY"
 };
 
 GanttMaster.locales = {
@@ -296,17 +299,65 @@ GanttMaster.permissions = {
   canSeeCriticalPath: true
 };
 
+GanttMaster.isHolidayInfoAvailable = function (start, end) {
+
+  var ret = false;
+
+  if (start && end) { // check range
+    ret = GanttMaster.locales.holidaysStartDate && GanttMaster.locales.holidaysEndDate &&
+      start >= GanttMaster.locales.holidaysStartDate && end <= GanttMaster.locales.holidaysEndDate;
+  } else { // check only one date
+    var date = start;
+    ret = GanttMaster.locales.holidaysStartDate && GanttMaster.locales.holidaysEndDate &&
+      date >= GanttMaster.locales.holidaysStartDate && date <= GanttMaster.locales.holidaysEndDate;
+  }
+
+  return ret;
+};
+
+/**
+ * checks whether the specified date lies in a date region, to which holiday information exists.
+ * If this applies, the date is returned as it, regardless of padding.
+ * Otherwise the nearest date with existent holiday information will be returned, after adding time padding,
+ * if the padding parameter is set.
+ * @param {Date Object} date to check
+ * @param {Number} padding the padding to add in days, if padding is > 1 or = 0. Otherwise (in case of padding between 0 and 1), 
+ * padding is the percentage of the time span, for which holiday information exist. 
+ */
+GanttMaster.getNearstDateWithHolidayInfo = function (date, padding) {
+
+  padding = _.defaultTo(padding, 0);
+  
+  if (!GanttMaster.locales.holidaysStartDate || !GanttMaster.locales.holidaysEndDate) return undefined;
+
+  if (GanttMaster.isHolidayInfoAvailable(date)) return date;
+
+  var distanceToStart = Math.abs(date.getTime() - GanttMaster.locales.holidaysStartDate.getTime());
+  var distanceToEnd = Math.abs(date.getTime() - GanttMaster.locales.holidaysEndDate.getTime());
+
+  if (padding > 0 && padding < 1) {
+    var paddingMillis = ((distanceToStart < distanceToEnd)? 1 : -1) * padding * (GanttMaster.locales.holidaysEndDate.getTime() - GanttMaster.locales.holidaysStartDate.getTime());
+    var refDate = (distanceToStart < distanceToEnd) ? GanttMaster.locales.holidaysStartDate : GanttMaster.locales.holidaysEndDate;
+    return new Date(refDate.getTime() + paddingMillis);
+  } else {
+    return (distanceToStart < distanceToEnd) ? new Date(GanttMaster.locales.holidaysStartDate).add('d', padding) : new Date(GanttMaster.locales.holidaysEndDate).add('d', -1 * padding);
+  }
+
+};
+
 GanttMaster.isHoliday = function (date) { 
+
+  date.clearTime();
+
   // check working day
   var isWorkingDay = _.includes(GanttMaster.locales.workingDays, date.getDay());
   if (!isWorkingDay) return true;
-  
+
   // check holiday
   if (!GanttMaster.locales.holidaysStartDate || !GanttMaster.locales.holidaysEndDate || date < GanttMaster.locales.holidaysStartDate || date > GanttMaster.locales.holidaysEndDate) {
-    console.log('Missing holiday infomation: ' + date);
+    ge.setHolidayErrorOnTransaction(date);
   }
-  var clearedDate = date.clearTime().getTime();
-  return GanttMaster.locales.holidays.indexOf(clearedDate) !== -1;
+  return GanttMaster.locales.holidays.indexOf(date.getTime()) !== -1; // the date has been cleared already
   
 };
 
@@ -341,22 +392,33 @@ GanttMaster.prototype.removeLink = function (fromTask, toTask) {
   if (!GanttMaster.permissions.canWrite || (!fromTask.canWrite && !toTask.canWrite))
     return;
 
-  this.beginTransaction();
-  var found = false;
-  for (var i = 0; i < this.links.length; i++) {
-    if (this.links[i].from == fromTask && this.links[i].to == toTask) {
-      this.links.splice(i, 1);
-      found = true;
-      break;
-    }
-  }
+  var self = this;
+  var cachedParameter = {
+    fromTaskId: _.clone(fromTask.id),
+    toTaskId: _.clone(toTask.id)
+  };
 
-  if (found) {
-    this.updateDependsStrings();
-    if (this.updateLinks(toTask))
-      this.changeTaskDates(toTask, toTask.start, toTask.end); // fake change to force date recomputation from dependencies
-  }
-  this.endTransaction();
+  this.registerTransaction(function() {
+    var found = false;
+    
+    var fromTask = self.getTask(cachedParameter.fromTaskId);
+    var toTask = self.getTask(cachedParameter.toTaskId);
+
+    for (var i = 0; i < self.links.length; i++) {
+      if (self.links[i].from == fromTask && self.links[i].to == toTask) {
+        self.links.splice(i, 1);
+        found = true;
+        break;
+      }
+    }
+
+    if (found) {
+      self.updateDependsStrings();
+      if (self.updateLinks(toTask))
+        self.changeTaskDates(toTask, toTask.start, toTask.end); // fake change to force date recomputation from dependencies
+    }
+
+  });
 };
 
 GanttMaster.prototype.removeAllLinks = function (task, openTrans) {
@@ -364,25 +426,39 @@ GanttMaster.prototype.removeAllLinks = function (task, openTrans) {
   if (!GanttMaster.permissions.canWrite || (!task.canWrite && !task.canWrite))
     return;
 
-  if (openTrans)
-    this.beginTransaction();
-  var found = false;
-  for (var i = 0; i < this.links.length; i++) {
-    if (this.links[i].from == task || this.links[i].to == task) {
-      this.links.splice(i, 1);
-      found = true;
+  var self = this;
+  var cachedParameter = {
+    taskId: _.clone(task.id)
+  };
+
+  var changeFunc = function () {
+
+    var task = self.getTask(cachedParameter.taskId);
+
+    var found = false;
+    for (var i = 0; i < self.links.length; i++) {
+      if (self.links[i].from == task || self.links[i].to == task) {
+        self.links.splice(i, 1);
+        found = true;
+      }
     }
+  
+    if (found) {
+      self.updateDependsStrings();
+    }
+  };
+
+  if (openTrans) {
+    this.registerTransaction(changeFunc);
+  } else {
+    changeFunc();
   }
 
-  if (found) {
-    this.updateDependsStrings();
-  }
-  if (openTrans)
-    this.endTransaction();
 };
 
 //------------------------------------  ADD TASK --------------------------------------------
 GanttMaster.prototype.addTask = function (task, row, forceAdd) {
+  
   //console.debug("master.addTask",task,row,this);
   if (!forceAdd && (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd ))
     return;
@@ -451,42 +527,40 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
 
   var backward = this.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
   //console.debug("loadProject", project)
-  this.beginTransaction();
-  this.serverClientTimeOffset = typeof project.serverTimeOffset !="undefined"? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
 
-  if (project.minEditableDate)
-    this.minEditableDate = computeStart(project.minEditableDate, backward);
-  else
-    this.minEditableDate = -Infinity;
-
-  if (project.maxEditableDate)
-    this.maxEditableDate = computeEnd(project.maxEditableDate, backward);
-  else
-    this.maxEditableDate = Infinity;
-
-
-  //recover stored ccollapsed statuas
-  var collTasks= [];
-
-  //shift dates in order to have client side the same hour (e.g.: 23:59) of the server side
-  for (var i = 0; i < project.tasks.length; i++) {
-    var task = project.tasks[i];
-    task.start += this.serverClientTimeOffset;
-    task.end += this.serverClientTimeOffset;
-  }
-
-
-  this.loadTasks(project.tasks, project.selectedRow);
-  this.deletedTaskIds = [];
-
-  //recover saved zoom level
-  if (project.zoom){
-    this.gantt.zoom = project.zoom;
-  }
-
-
-  this.endTransaction();
   var self = this;
+
+  this.registerTransaction(function() {
+
+    self.serverClientTimeOffset = typeof project.serverTimeOffset !="undefined"? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
+
+    if (project.minEditableDate)
+      self.minEditableDate = computeStart(project.minEditableDate, backward);
+    else
+      self.minEditableDate = -Infinity;
+
+    if (project.maxEditableDate)
+      self.maxEditableDate = computeEnd(project.maxEditableDate, backward);
+    else
+      self.maxEditableDate = Infinity;
+
+    //shift dates in order to have client side the same hour (e.g.: 23:59) of the server side
+    for (var i = 0; i < project.tasks.length; i++) {
+      var task = project.tasks[i];
+      task.start += self.serverClientTimeOffset;
+      task.end += self.serverClientTimeOffset;
+    }
+
+    self.loadTasks(project.tasks, project.selectedRow);
+    self.deletedTaskIds = [];
+
+    //recover saved zoom level
+    if (project.zoom) {
+      self.gantt.zoom = project.zoom;
+    }
+
+  });
+
   if (!keepScroll) {
 
     // fit the splitter position
@@ -918,9 +992,9 @@ GanttMaster.prototype.moveUpCurrentTask = function () {
   if (!GanttMaster.permissions.canWrite  || !self.currentTask.canWrite || !GanttMaster.permissions.canMoveUpDown )
     return;
 
-    self.beginTransaction();
-    self.currentTask.moveUp();
-    self.endTransaction();
+    self.registerTransaction(function () {
+      self.currentTask.moveUp();
+    });
   }
 };
 
@@ -931,9 +1005,10 @@ GanttMaster.prototype.moveDownCurrentTask = function () {
   if (!GanttMaster.permissions.canWrite  || !self.currentTask.canWrite || !GanttMaster.permissions.canMoveUpDown )
     return;
 
-    self.beginTransaction();
-    self.currentTask.moveDown();
-    self.endTransaction();
+    self.registerTransaction(function () {
+      self.currentTask.moveDown();
+    });
+
   }
 };
 
@@ -945,9 +1020,9 @@ GanttMaster.prototype.outdentCurrentTask = function () {
 
     var par = self.currentTask.getParent();
 
-    self.beginTransaction();
-    self.currentTask.outdent();
-    self.endTransaction();
+    self.registerTransaction(function () {
+      self.currentTask.outdent();
+    });
 
     //[expand]
     if (par) self.editor.refreshExpandStatus(par);
@@ -960,9 +1035,9 @@ GanttMaster.prototype.indentCurrentTask = function () {
   if (!GanttMaster.permissions.canWrite || !self.currentTask.canWrite|| !GanttMaster.permissions.canInOutdent)
     return;
 
-    self.beginTransaction();
-    self.currentTask.indent();
-    self.endTransaction();
+    self.registerTransaction(function () {
+      self.currentTask.indent();
+    });
 
     var newParent = self.currentTask.getParent();
     if (newParent && newParent.isCollapsed()) {
@@ -976,51 +1051,54 @@ GanttMaster.prototype.addBelowCurrentTask = function () {
   if (!GanttMaster.permissions.canWrite|| !GanttMaster.permissions.canAdd)
     return;
 
-  var factory = new TaskFactory(this);
-  var ch;
-  var row = 0;
-  if (self.currentTask && self.currentTask.name) {
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
-    row = self.currentTask.getRow() + 1;
+  this.registerTransaction(function () {
+    var factory = new TaskFactory(self);
+    var ch;
+    var row = 0;
+    if (self.currentTask && self.currentTask.name) {
+      ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level+ (self.currentTask.isParent()||self.currentTask.level==0?1:0), self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
+      row = self.currentTask.getRow() + 1;
 
-    if (row>0) {
-      self.beginTransaction();
-      var task = self.addTask(ch, row);
-      if (task) {
-        task.rowElement.click();
-        task.rowElement.find("[name=name]").focus();
+      if (row > 0) {
+        var task = self.addTask(ch, row);
+        if (task) {
+          task.rowElement.click();
+          task.rowElement.find("[name=name]").focus();
+        }
       }
-      self.endTransaction();
     }
-  }
+  });
 };
 
 GanttMaster.prototype.addAboveCurrentTask = function () {
   var self = this;
   if (!GanttMaster.permissions.canWrite || !GanttMaster.permissions.canAdd)
     return;
-  var factory = new TaskFactory(this);
 
-  var ch;
-  var row = 0;
-  if (self.currentTask  && self.currentTask.name) {
-    //cannot add brothers to root
-    if (self.currentTask.level <= 0)
-      return;
+  this.registerTransaction(function () {
 
-    ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
-    row = self.currentTask.getRow();
+    var factory = new TaskFactory(self);
+    var ch;
+    var row = 0;
+    if (self.currentTask  && self.currentTask.name) {
+      //cannot add brothers to root
+      if (self.currentTask.level <= 0)
+        return;
 
-    if (row > 0) {
-      self.beginTransaction();
-      var task = self.addTask(ch, row);
-      if (task) {
-        task.rowElement.click();
-        task.rowElement.find("[name=name]").focus();
+      ch = factory.build("tmp_" + new Date().getTime(), "", "", self.currentTask.level, self.currentTask.start, self.currentTask.end, 1, null, self.defaultTaskColor);
+      row = self.currentTask.getRow();
+
+      if (row > 0) {
+        var task = self.addTask(ch, row);
+        if (task) {
+          task.rowElement.click();
+          task.rowElement.find("[name=name]").focus();
+        }
       }
-      self.endTransaction();
     }
-  }
+
+  });
+  
 };
 
 GanttMaster.prototype.deleteCurrentTask = function () {
@@ -1028,32 +1106,33 @@ GanttMaster.prototype.deleteCurrentTask = function () {
   var self = this;
   if (!self.currentTask || !GanttMaster.permissions.canDelete && !self.currentTask.canDelete)
     return;
-  var row = self.currentTask.getRow();
-  if (self.currentTask && (row > 0 || self.isMultiRoot || self.currentTask.isNew()) ) {
-    var par = self.currentTask.getParent();
-    self.beginTransaction();
-    self.currentTask.deleteTask();
-    self.currentTask = undefined;
 
-    //recompute depends string
-    self.updateDependsStrings();
+  this.registerTransaction(function () {
+    var row = self.currentTask.getRow();
+    if (self.currentTask && (row > 0 || self.isMultiRoot || self.currentTask.isNew()) ) {
+      var par = self.currentTask.getParent();
 
-    //redraw
-    self.redraw();
+      self.currentTask.deleteTask();
+      self.currentTask = undefined;
 
-    //[expand]
-    if (par) self.editor.refreshExpandStatus(par);
+      //recompute depends string
+      self.updateDependsStrings();
 
+      //redraw
+      self.redraw();
 
-    //focus next row
-    row = row > self.tasks.length - 1 ? self.tasks.length - 1 : row;
-    if (row >= 0) {
-      self.currentTask = self.tasks[row];
-      self.currentTask.rowElement.click();
-      self.currentTask.rowElement.find("[name=name]").focus();
+      //[expand]
+      if (par) self.editor.refreshExpandStatus(par);
+
+      //focus next row
+      row = row > self.tasks.length - 1 ? self.tasks.length - 1 : row;
+      if (row >= 0) {
+        self.currentTask = self.tasks[row];
+        self.currentTask.rowElement.click();
+        self.currentTask.rowElement.find("[name=name]").focus();
+      }
     }
-    self.endTransaction();
-  }
+  });
 };
 
 
@@ -1081,7 +1160,7 @@ GanttMaster.prototype.fullScreen = function () {
     if (this.workSpace.is(".ganttFullScreen")) {
       $(window.frameElement).css({ position: "", top: "", left: "", bottom: "", right: "", margin: "", zIndex: "", backgroundColor: "", width: "", height: ""});
     } else {
-      $(window.frameElement).css({ position: "fixed", top:0, left:0, bottom:0, right: 0, margin: "auto", zIndex: 1000, backgroundColor: "#fff", width: "100%", height: "100%" });
+      $(window.frameElement).css({ position: "fixed", top:0, left:0, bottom:0, right: 0, margin: "auto", zIndex: 27, backgroundColor: "#fff", width: "100%", height: "100%" });
     }
     this.workSpace.toggleClass("ganttFullScreen").resize();
     $("#fullscrbtn .teamworkIcon").html(this.workSpace.is(".ganttFullScreen")?"€":"@");
@@ -1239,16 +1318,17 @@ GanttMaster.prototype.getCollapsedDescendant = function () {
 };
 
 //<%----------------------------- TRANSACTION MANAGEMENT ---------------------------------%>
-GanttMaster.prototype.beginTransaction = function () {
-  if (!this.__currentTransaction) {
-    this.__currentTransaction = {
-      snapshot: JSON.stringify(this.saveGantt(true)),
-      errors:   []
+GanttMaster.prototype.beginTransaction = function (lite) {
+  var transName = lite ? '__currentLiteTransaction' : '__currentTransaction';
+  if (!this[transName] || lite) {
+    this[transName] = {
+      snapshot: lite ? null : JSON.stringify(this.saveGantt(true)),
+      errors: []
     };
   } else {
     console.error("Cannot open twice a transaction");
   }
-  return this.__currentTransaction;
+  return this[transName];
 };
 
 
@@ -1258,6 +1338,32 @@ GanttMaster.prototype.setErrorOnTransaction = function (errorMessage, task) {
     this.__currentTransaction.errors.push({msg: errorMessage, task: task});
   } else {
     console.error(errorMessage);
+  }
+};
+
+GanttMaster.prototype.setHolidayErrorOnTransaction = function (start, end) {
+
+  end = _.defaultTo(end, start);
+
+  var genericErrorSetter = function (ct) {
+    if (!ct.holidayRequest) {
+      ct.holidayRequest = {startDate: new Date(start.getTime()), endDate: new Date(end.getTime())};
+    } else {
+      if (start < ct.holidayRequest.startDate) {
+        ct.holidayRequest.startDate = new Date(start.getTime());
+      }
+      if (end > ct.holidayRequest.endDate) {
+        ct.holidayRequest.endDate = new Date(end.getTime());
+      }
+    }
+  };
+
+  if (this.__currentTransaction) { // try to set the holiday request on a normal transaction
+    genericErrorSetter(this.__currentTransaction);
+  } else if (this.__currentLiteTransaction) { // if no normal transaction is found, try to set the request on a lite transaction
+    genericErrorSetter(this.__currentLiteTransaction);
+  } else {
+    console.log("There is no current transaction to set holiday error on.");
   }
 };
 
@@ -1271,20 +1377,74 @@ GanttMaster.prototype.isTransactionInError = function () {
 
 };
 
-GanttMaster.prototype.endTransaction = function () {
-  if (!this.__currentTransaction) {
+GanttMaster.prototype.registerTransaction = function (func, options) {
+  options = options || {};
+  // start transaction
+  var t = this.beginTransaction(options.lite);
+  // save the parameter in case of caching
+  t.func = func;
+  t.options = options;
+  // execute the function
+  func();
+  // clear cached transaction, after it has been executed
+  var transName = options.lite ? '__chachedLiteTransaction' : '__chachedTransaction';
+  if (ge[transName] && func === ge[transName].func && options === ge[transName].options) {
+    ge[transName] = null;
+  }
+  // end transaction
+  this.endTransaction(options.withoutUndo, options.lite);
+};
+
+GanttMaster.prototype.endTransaction = function (withoutUndo, lite) {
+
+  var transName = lite ? '__currentLiteTransaction' : '__currentTransaction';
+
+  var msg = "";
+
+  if (!this[transName]) {
     console.error("Transaction never started.");
     return true;
+  }
+
+  if (lite) {
+
+    if (this.__currentLiteTransaction.holidayRequest) {
+
+      if (this.proactiveMode) {
+        // here we need to send a get_locale message
+        requestHolidays(this.__currentLiteTransaction.holidayRequest.startDate, this.__currentLiteTransaction.holidayRequest.endDate);
+        this.__chachedLiteTransaction = {
+          func: this.__currentLiteTransaction.func, 
+          options: this.__currentLiteTransaction.options 
+        };
+      } else {
+        msg += GanttMaster.messages.MISSING_HOLIDAY + '\n (' + this.__currentLiteTransaction.holidayRequest.startDate.format() +
+                ' - ' + this.__currentLiteTransaction.holidayRequest.endDate.format() + ')';
+      }
+  
+      if (msg != "") {
+        showErrorMsg(msg);
+      }
+
+      this.__currentLiteTransaction = undefined;
+
+      return false;
+    }
+
+    return true;
+
   }
 
   var ret = true;
 
   //no error -> commit
-  if (this.__currentTransaction.errors.length <= 0) {
+  if (this.__currentTransaction.errors.length <= 0 && !this.__currentTransaction.holidayRequest) {
     //console.debug("committing transaction");
 
     //put snapshot in undo
-    this.__undoStack.push(this.__currentTransaction.snapshot);
+    if (!withoutUndo) {
+      this.__undoStack.push(this.__currentTransaction.snapshot);
+    }
     //clear redo stack
     this.__redoStack = [];
 
@@ -1303,19 +1463,36 @@ GanttMaster.prototype.endTransaction = function () {
     //enqueue for gantt refresh
     this.taskIsChanged(); 
 
-    //error -> rollback
+    //error -> rollback and/or holiday missing -> react
   } else {
     ret = false;
     //console.debug("rolling-back transaction");
 
-    //compose error message
-    var msg = "";
-    for (var j = 0; j < this.__currentTransaction.errors.length; j++) {
-      var err = this.__currentTransaction.errors[j];
-      msg = msg + err.msg + "\n\n";
+    if (this.__currentTransaction.errors.length) {
+      //compose error message
+      for (var j = 0; j < this.__currentTransaction.errors.length; j++) {
+        var err = this.__currentTransaction.errors[j];
+        msg = msg + err.msg + "\n\n";
+      }      
     }
-    showErrorMsg(msg);
 
+    if (this.__currentTransaction.holidayRequest) {
+      if (this.proactiveMode) {
+        // here we need to send a get_locale message
+        requestHolidays(this.__currentTransaction.holidayRequest.startDate, this.__currentTransaction.holidayRequest.endDate);
+        this.__chachedTransaction = {
+          func: this.__currentTransaction.func, 
+          options: this.__currentTransaction.options 
+        };
+      } else {
+        msg += GanttMaster.messages.MISSING_HOLIDAY + '\n (' + this.__currentTransaction.holidayRequest.startDate.format() +
+               ' - ' + this.__currentTransaction.holidayRequest.endDate.format() + ')';
+      }
+    }
+
+    if (msg != "") {
+      showErrorMsg(msg);
+    }
 
     //try to restore changed tasks
     var oldTasks = JSON.parse(this.__currentTransaction.snapshot);

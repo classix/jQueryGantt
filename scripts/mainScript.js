@@ -57,6 +57,17 @@ var receiveMessage = function (event)
     }
     case "update_holidays": {
       setHolidays(event.data);
+      // check if this was a response of a holidays request
+      if (ge) {
+        // normal transactions
+        if (ge.__chachedTransaction) {
+          ge.registerTransaction(ge.__chachedTransaction.func, ge.__chachedTransaction.options);
+        } 
+        // lite transactions (used mainly for rendering)
+        if (ge.__chachedLiteTransaction) {
+          ge.registerTransaction(ge.__chachedLiteTransaction.func, ge.__chachedLiteTransaction.options);
+        }
+      }
       break;
     }
     case "update_permissions": {
@@ -161,17 +172,17 @@ var setHolidays = function (data) {
   }
 
   GanttMaster.locales.holidays = _.map(data.holidays, function (d) { return Date.parseString(d, GanttMaster.locales.defaultFormat).clearTime().getTime(); });
-  GanttMaster.locales.holidaysStartDate = Date.parseString(data.startDate, GanttMaster.locales.defaultFormat);
-  GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.defaultFormat);
+  GanttMaster.locales.holidaysStartDate = Date.parseString(data.startDate, GanttMaster.locales.defaultFormat).clearTime();
+  GanttMaster.locales.holidaysEndDate = Date.parseString(data.endDate, GanttMaster.locales.defaultFormat).clearTime();
 };
 
 var applyOptions = function () {
   var originalKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'completeOnClose', 'fillWithEmptyRows', 
   'minRowsInEditor', 'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 
-  'viewEndDate', 'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor'];
+  'viewEndDate', 'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor', 'proactiveMode'];
   var mapKeys = ['isMultiRoot', 'minEditableDate', 'maxEditableDate', 'set100OnClose', 'fillWithEmptyLines', 'minRowsInEditor', 
   'showSaveButton', 'schedulingDirection', 'autoUpdate', 'autoComputeCriticalPath', 'viewStartDate', 'viewEndDate', 
-  'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor'];
+  'includeToday', 'autoShrinkCalendar', 'useStatus', 'defaultTaskColor', 'proactiveMode'];
   
   for (var i = 0; i < originalKeys.length; i++) {
     var value = ganttOptions[originalKeys[i]];
@@ -430,5 +441,10 @@ function saveGantt() {
 function updateGantt() {
   var prj = ge.saveProject();
   var msg = { type: 'update_data', data: prj };
+  parent.postMessage(msg, location.origin);
+}
+
+function requestHolidays(startDate, endDate) {
+  var msg = { type: 'get_holidays', data: {startDate: startDate, endDate: endDate}};
   parent.postMessage(msg, location.origin);
 }
