@@ -195,6 +195,11 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   else
     row.removeClass("collapsed");
 
+  row.find("[data-ES]").text(!_.isNil(task.earliestStartDate) ? new Date(task.earliestStartDate).format() : " - ");
+  row.find("[data-EE]").text(!_.isNil(task.earliestFinishDate) ? new Date(task.earliestFinishDate).format() : " - ");
+  row.find("[data-LS]").text(!_.isNil(task.latestStartDate) ? new Date(task.latestStartDate).format() : " - ");
+  row.find("[data-LE]").text(!_.isNil(task.latestFinishDate) ? new Date(task.latestFinishDate).format() : " - ");
+
 
   //Enhancing the function to perform own operations
   this.master.element.trigger('gantt.task.afterupdate.event', task);

@@ -784,8 +784,11 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
 
     //shift back to server side timezone
     if (!forTransaction) {
-      cloned.start -= this.serverClientTimeOffset;
-      cloned.end -= this.serverClientTimeOffset;
+      _.each(["start", "end", "earliestStart", "earliestFinish", "latestStart", "latestFinish"], function (prop) {
+        if (!_.isNil(cloned.earliestStart)) {
+          cloned[prop] -= this.serverClientTimeOffset;
+        }
+      });
     }
 
     saved.push(cloned);

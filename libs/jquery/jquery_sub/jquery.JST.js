@@ -50,6 +50,8 @@ $.JST = {
         var attrName = attrs[i];
         if ($.trim(attrName.toLowerCase()) === "innerhtml") {
           elem.html(_.escape(attrValue));
+        } else if ($.trim(attrName.toLowerCase()) === "innertext") {
+          elem.text(attrValue);
         } else {
           elem.attr(attrName, _.escape(attrValue));
         }
