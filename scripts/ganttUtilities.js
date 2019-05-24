@@ -389,12 +389,19 @@ function decrementDateByWorkingDays(date, days) {
   return d.getTime();
 }
 
+var decrementOneWorkingDateFromMillis = function (millis) {
+  return (new Date(millis)).decrementDateByWorkingDays(1).getTime();
+};
+
+var incrementOneWorkingDateFromMillis = function (millis) {
+  return (new Date(millis)).incrementDateByWorkingDays(1).getTime();
+};
+
 
 function recomputeDuration(start, end) {
   //console.debug("recomputeDuration");
   return new Date(start).distanceInWorkingDays(new Date(end));
 }
-
 
 function resynchDates(schedulingDir, leavingField, startField, startMilesField, durationField, endField, endMilesField) {
   var backward = schedulingDir === GanttConstants.SCHEDULE_DIR.BACKWARD;
@@ -402,9 +409,7 @@ function resynchDates(schedulingDir, leavingField, startField, startMilesField, 
   function resynchDatesSetFields(command) {
     //console.debug("resynchDatesSetFields",command);
     //var duration = parseInt(durationField.val());
-    var duration = daysFromString(durationField.val(), true);
-    if (!duration || duration < 1)
-      duration = 1;
+    var duration = parseInt(durationField.val());
 
     var start = computeStart(Date.parseString(startField.val()).getTime());
 
@@ -419,19 +424,21 @@ function resynchDates(schedulingDir, leavingField, startField, startMilesField, 
     var workingDays;
     if ("CHANGE_END" == command) {
       date.setTime(start);
-      workingDays = duration - 1;
+      workingDays = _.max([duration - 1, 0]); // _.max to handle the case of 0 duration
       date.incrementDateByWorkingDays(workingDays);
       date.setHours(23, 59, 59, 999);
       end = computeEnd(date.getTime());
     } else if ("CHANGE_START" == command) {
       date.setTime(end);
-      workingDays = duration - 1;
+      workingDays = _.max([duration - 1, 0]); // _.max to handle the case of 0 duration
       date.incrementDateByWorkingDays(-workingDays);
       date.setHours(0, 0, 0, 0);
       start = computeStart(date.getTime());
     } else if ("CHANGE_DURATION" == command) {
       //console.debug("CHANGE_DURATION",new Date(start),new Date(end))
-      duration = new Date(start).distanceInWorkingDays(new Date(end));
+      if (duration !== 0) {
+        duration = new Date(start).distanceInWorkingDays(new Date(end));
+      }
     }
 
     startField.val(new Date(start).format());
@@ -449,7 +456,7 @@ function resynchDates(schedulingDir, leavingField, startField, startMilesField, 
   var endIsMilesAndFilled = endIsFilled && (endMilesField.prop("checked") || endField.is("[readOnly]"));
 
   if (durIsFilled) {
-    if (isNaN(parseInt(durationField.val())) || parseInt(durationField.val()) < 1)
+    if (isNaN(parseInt(durationField.val())) || parseInt(durationField.val()) < 0)
       durationField.val(1);
   }
 
@@ -531,9 +538,9 @@ function resynchDatesLogically (schedulingDir, newStart, newEnd, newDuration, or
   var durationIsDefined = !_.isNil(newDuration) && !_.isNaN(newDuration) && newDuration > 0;
   var ret = {};
   var tmpDate;
-  var oldDuration = originalTask.duration - 1;
+  var oldDuration = Math.max(0, originalTask.duration - 1);
   if (durationIsDefined) {
-    newDuration = newDuration - 1;
+    newDuration = Math.max(0, newDuration - 1);
   }
 
   if (startIsDefined) {

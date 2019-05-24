@@ -337,7 +337,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           cachedParameter.end = _.cloneDeep(dates.end);
           self.master.registerTransaction(function () {
             var task = self.master.getTask(cachedParameter.taskId);
-            self.master.changeTaskDates(task, cachedParameter.start, cachedParameter.end, true, task.isParent());
+            self.master.changeTaskDates(task, cachedParameter.start, cachedParameter.end, true, false, true);
           });
           inp.updateOldValue(); //in order to avoid multiple call if nothing changed
         }
@@ -453,8 +453,9 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
           }
   
         } else if (field == "duration") {
-          var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
-          self.master.changeTaskDates(task, dates.start, dates.end, true);
+          var durationField = row.find("[name=duration]");
+          var dates = resynchDates(self.master.schedulingDirection, el, row.find("[name=start]"), row.find("[name=startIsMilestone]"), durationField, row.find("[name=end]"), row.find("[name=endIsMilestone]"));
+          self.master.changeTaskDates(task, dates.start, dates.end, true, dates.duration === 0, true);
         } else if (field == "name" && el.val() == "") { // remove unfilled task
           par = task.getParent();
           task.deleteTask();

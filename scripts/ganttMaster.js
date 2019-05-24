@@ -26,7 +26,8 @@ var GanttConstants = {
     FORWARD: 0,
     BACKWARD: 1,
     NO_SCHEDULING: 2
-  }
+  },
+  ZERO_TASK_WIDTH: 3
 };
 
 function GanttMaster() {
@@ -415,7 +416,7 @@ GanttMaster.prototype.removeLink = function (fromTask, toTask) {
     if (found) {
       self.updateDependsStrings();
       if (self.updateLinks(toTask))
-        self.changeTaskDates(toTask, toTask.start, toTask.end); // fake change to force date recomputation from dependencies
+        self.changeTaskDates(toTask, toTask.start, toTask.end, false, toTask.duration === 0, false); // fake change to force date recomputation from dependencies
     }
 
   });
@@ -668,8 +669,8 @@ GanttMaster.prototype.changeTaskDeps = function (task) {
   }
 };
 
-GanttMaster.prototype.changeTaskDates = function (task, start, end, ignoreMilestones, isGroup) {
-  return task.setPeriod(start, end, false, ignoreMilestones, isGroup);
+GanttMaster.prototype.changeTaskDates = function (task, start, end, ignoreMilestones, noDuration, fromEditor) {
+  return task.setPeriod(start, end, false, ignoreMilestones, noDuration, fromEditor);
 };
 
 

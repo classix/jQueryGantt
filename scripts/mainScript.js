@@ -350,7 +350,7 @@ var updateTasksAndDeps = function (tasks, deps, selectedTaskId) {
     if (!_.isNil(t.start) || !_.isNil(t.end) || (!_.isNil(t.duration) && !_.isNaN(t.duration) && t.duration > 0)) {
       // start, end, duration
       var dates = resynchDatesLogically(ge.schedulingDirection, t.start, t.end, t.duration, existingTask);
-      ge.changeTaskDates(existingTask, dates.start, dates.end);
+      ge.changeTaskDates(existingTask, dates.start, dates.end, false, dates.duration === 0, false);
     }
 
   });

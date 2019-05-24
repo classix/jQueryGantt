@@ -95,7 +95,7 @@ Task.prototype.clone = function () {
 };
 
 //<%---------- SET PERIOD ---------------------- --%>
-Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGroup) {
+Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDuration, fromEditor) {
 
   //console.debug("setPeriod ",this.code,this.name,new Date(start), new Date(end));
   //var profilerSetPer = new Profiler("gt_setPeriodJS");
@@ -121,12 +121,14 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGrou
   start = computeStart(start, backward);
   end = computeEnd(end, backward);
 
+  var isGroup = this.isParent();
+
   // groups can only be moved and cannot be resized on their own
-  if (isGroup) {
+  if (fromEditor && isGroup) {
     return this.moveTo(backward ? end : start, ignoreMilestones, true);
   }
 
-  var newDuration = recomputeDuration(start, end);
+  var newDuration = noDuration ? 0 : recomputeDuration(start, end);
 
   //if are equals do nothing and return true
   if (!force && start == originalPeriod.start && end == originalPeriod.end && newDuration == originalPeriod.duration) {
@@ -137,9 +139,6 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGrou
   if (newDuration == this.duration) { // is shift
     return this.moveTo(backward ? end : start, ignoreMilestones);
   }
-
-  //console.debug("setStart",date,date instanceof Date);
-  var wantedDateMillis = backward ? end : start;
 
   if (backward) {
     // cannot end before start
@@ -165,35 +164,34 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGrou
   var somethingChanged = false;
 
   if (backward) {
-    if (this.end != end || this.end != wantedDateMillis) {
+    if (this.end != end) {
       this.end = end;
       somethingChanged = true;
     }
   } else {
-    if (this.start != start || this.start != wantedDateMillis) {
+    if (this.start != start) {
       this.start = start;
       somethingChanged = true;
     }
   }
 
-  // set end/start
-  var wantedDateMillis2 = backward ? start : end;
-
-  //end = computeEnd(end);//todo R&S 30/3/2016 messo in vetta
+  if ((noDuration && this.duration !== 0) || (!noDuration && this.duration === 0)) {
+    somethingChanged = true;
+  }
 
   if (backward) {
-    if (this.start != start || this.start != wantedDateMillis2) {
+    if (this.start != start) {
       this.start = start;
       somethingChanged = true;
     }
   } else {
-    if (this.end != end || this.end != wantedDateMillis2) {
+    if (this.end != end) {
       this.end = end;
       somethingChanged = true;
     }
   }
 
-  this.duration = recomputeDuration(this.start, this.end);
+  this.duration = noDuration ? 0 : recomputeDuration(this.start, this.end);
 
   //profilerSetPer.stop();
 
@@ -219,12 +217,12 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, isGrou
   if (todoOk && !updateTree(this)) {
     todoOk = false;
   }
-
+  
   if (todoOk) {
     if (backward) {
-      todoOk = this.propagateToSuperiors(start);
+      todoOk = this.propagateToSuperiors(noDuration ? incrementOneWorkingDateFromMillis(start) : start);
     } else {
-      todoOk = this.propagateToInferiors(end);
+      todoOk = this.propagateToInferiors(noDuration ? decrementOneWorkingDateFromMillis(end) : end);
     }
   }
   return todoOk;
@@ -378,7 +376,8 @@ Task.prototype.computeStartBySuperiors = function (proposedStart, backward) {
     supEnd=0;
     for (var i = 0; i < sups.length; i++) {
       var link = sups[i];
-      supEnd = Math.max(supEnd, incrementDateByWorkingDays(link.from.end, link.lag + 1));
+      var addOneDay = link.from.duration !== 0;
+      supEnd = Math.max(supEnd, incrementDateByWorkingDays(link.from.end, link.lag + (addOneDay? 1 : 0)));
     }
   }
   return computeStart(supEnd, backward);
@@ -391,10 +390,11 @@ Task.prototype.computeEndByInferiors = function(proposedEnd, backward) {
   if (infs && infs.length > 0) {
     for (var i = 0; i < infs.length; i++) {
       var link = infs[i];
+      var addOneDay = link.to.duration !== 0;
       if (i === 0) {
-        infStart = decrementDateByWorkingDays(link.to.start, link.lag + 1);
+        infStart = decrementDateByWorkingDays(link.to.start, link.lag + (addOneDay? 1 : 0));
       } else {
-        infStart = Math.min(infStart, decrementDateByWorkingDays(link.to.start, link.lag + 1));
+        infStart = Math.min(infStart, decrementDateByWorkingDays(link.to.start, link.lag + (addOneDay? 1 : 0)));
       }
     }
   }
@@ -403,6 +403,7 @@ Task.prototype.computeEndByInferiors = function(proposedEnd, backward) {
 
 
 function updateTree(task) {
+  
   //console.debug("updateTree ",task.code,task.name);
   var error;
 
@@ -416,14 +417,23 @@ function updateTree(task) {
   var children = p.getChildren();
   var bs = Infinity;
   var be = 0;
+  var allTasksWithNoDuration = true;
   for (var i = 0; i < children.length; i++) {
     var ch = children[i];
-    be = Math.max(be, ch.end);
-    bs = Math.min(bs, ch.start);
+    if (ch.duration !== 0) {
+      be = Math.max(be, ch.end);
+      bs = Math.min(bs, ch.start);
+      allTasksWithNoDuration = false;
+    }
+  }
+
+  if (allTasksWithNoDuration) {
+    bs = task.start;
+    be = task.end;
   }
 
   //propagate updates if needed
-  if (bs != p.start || be != p.end) {
+  if (bs != p.start || be != p.end || (allTasksWithNoDuration && p.duration !== 0) || (!allTasksWithNoDuration && p.duration === 0)) {
 
     //can write?
     if (!p.canWrite) {
@@ -431,7 +441,7 @@ function updateTree(task) {
       return false;
     }
 
-    return p.setPeriod(bs, be);
+    return p.setPeriod(bs, be, false, false, allTasksWithNoDuration, false);
   }
 
   return true;
@@ -896,7 +906,7 @@ Task.prototype.indent = function () {
     // set start date to parent' start if no deps
     if (parent && !this.depends) {
       var new_end = computeEndByDuration(parent.start, this.duration);
-      this.master.changeTaskDates(this, parent.start, new_end, false, this.isParent());
+      this.master.changeTaskDates(this, parent.start, new_end, false, this.duration === 0, false);
     }
 
     //recompute depends string

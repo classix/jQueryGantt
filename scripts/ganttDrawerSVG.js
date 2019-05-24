@@ -616,7 +616,16 @@ Ganttalendar.prototype.drawTask = function (task) {
 
   task.hasChild = task.isParent();
 
-  var taskDimensions = {x:x, y:top+self.taskVertOffset, width:Math.round((task.end - task.start) * self.fx),height:self.taskHeight};
+  var drawWidth = Math.round((task.end - task.start) * self.fx);
+  if (task.duration === 0) {
+    drawWidth = GanttConstants.ZERO_TASK_WIDTH;
+  }
+  var taskDimensions = {
+                         x: x, 
+                         y: top + self.taskVertOffset, 
+                         width: drawWidth, 
+                         height: self.taskHeight
+                       };
   var taskBox = $(_createTaskSVG(task, taskDimensions));
   task.ganttElement = taskBox;
   if (self.showCriticalPath && task.isCritical)
@@ -674,7 +683,7 @@ Ganttalendar.prototype.drawTask = function (task) {
         var task = self.master.getTask($(this).attr("taskid"));
         task.rowElement.click();
       }).dragExtedSVG($(self.svg.root()), {
-        minSize: self.fx * 3600 * 1000 * 24,
+        minSize: GanttConstants.ZERO_TASK_WIDTH,
         canResize:  GanttMaster.permissions.canWrite && task.canWrite && !task.hasChild,
         canDrag:    GanttMaster.permissions.canWrite && task.canWrite,
         startDrag:  function (e) {
@@ -766,17 +775,24 @@ Ganttalendar.prototype.drawTask = function (task) {
         resize: function (e, resizingFromStart, resizingFromEnd) {
           //find and update links from, to
           var taskbox = $(this);
-          var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
+          var x = parseFloat(taskbox.attr("x"));
+          var st = Math.round((x / self.fx) + self.startMillis);
           var taskBoxWidth = taskbox.children('rect')[0].getBBox().width;
-          var en = Math.round(((parseFloat(taskbox.attr("x")) + taskBoxWidth) / self.fx) + self.startMillis);
+          var en = Math.round(((x + taskBoxWidth) / self.fx) + self.startMillis);
           var d = task.duration;
+          var startDate, endDate;
+          var halfADayWidth = 12 * 3600000 * self.fx;
           if (resizingFromStart) {
-            d = computeStartDate(st + 11.99 * 3600000, backward).distanceInWorkingDays(new Date(task.end));
+            startDate = computeStartDate(st + 11.99 * 3600000, backward);
+            endDate = new Date(task.end);
+            d = (taskBoxWidth < halfADayWidth) ? 0 : startDate.distanceInWorkingDays(endDate);
           } else if (resizingFromEnd) {
-            d = (new Date(task.start)).distanceInWorkingDays(computeEndDate(en, backward));
+            startDate = new Date(task.start);
+            endDate = computeEndDate(en - 11.99 * 3600000, backward);
+            d = (taskBoxWidth < halfADayWidth) ? 0 : startDate.distanceInWorkingDays(endDate);
           }
           var text = taskBox.data("textDur");
-          text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(Math.max(d,1));
+          text.attr("x", parseInt(taskbox.attr("x")) + taskBoxWidth + 8).html(Math.max(d,0));
           var label = taskBox.find('.taskLabelSVG, .taskLabelSVGWhite, .taskLabelSVGBlack');
           var padding = 5;
           var textWidth = label[0].getBBox().width;
@@ -811,12 +827,14 @@ Ganttalendar.prototype.drawTask = function (task) {
           };
           var st = Math.round((parseFloat(taskbox.attr("x")) / self.fx) + self.startMillis);
           var en = Math.round(((parseFloat(taskbox.attr("x")) + taskBoxWidth) / self.fx) + self.startMillis);
+          var halfADay = 12 * 3600000;
+          var noDuration = Math.abs(en - st) < halfADay;
           self.master.registerTransaction(function () {
             var t = self.master.getTask(cachedParameter.taskId);
             if (resizingFromStart) {
-              self.master.changeTaskDates(t, new Date(st + 11.99 * 3600000), cachedParameter.taskEnd);
+              self.master.changeTaskDates(t, noDuration ? cachedParameter.taskEnd : (st + 11.99 * 3600000), cachedParameter.taskEnd, false, noDuration, false);
             } else if (resizingFromEnd) {
-              self.master.changeTaskDates(t, cachedParameter.taskStart, new Date(en));
+              self.master.changeTaskDates(t, cachedParameter.taskStart, noDuration ? cachedParameter.taskStart : (en - 11.99 * 3600000), false, noDuration, false);
             }
           });
         }
@@ -1299,8 +1317,14 @@ $.fn.dragExtedSVG = function (svg, opt) {
   this.each(function () {
     var el = $(this);
     svgX = svg.parent().offset().left; //parent is used instead of svg for a Firefox oddity
-    if (options.canDrag)
+    
+    if (parseInt(el.attr("width")) < GanttConstants.ZERO_TASK_WIDTH + 4) { //4px padding, border etc.
+      options.canDrag = false;
+    }
+
+    if (options.canDrag) {
       el.addClass("deSVGdrag");
+    }
 
     if (options.canResize || options.canDrag) {
       el.bind("mousedown.deSVG",function (e) {
@@ -1351,7 +1375,7 @@ $.fn.dragExtedSVG = function (svg, opt) {
 
 
           //start resize start
-          } else  if (options.canResize && (posx>=x1 && posx<=x1+resizeZoneWidth)) {
+          } else if (options.canResize && (posx>=x1 && posx<=x1+resizeZoneWidth)) {
             //store offset mouse x1
             offsetMouseRect = parseFloat(target.attr("x"));
             target.attr("oldw", target.attr("width")); //todo controllare se è ancora usato oldw
