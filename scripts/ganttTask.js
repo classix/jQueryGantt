@@ -844,7 +844,7 @@ Task.prototype.setLatest = function (maxCost, maxEnd) {
   this.latestStart = maxCost - this.criticalCost;
   this.latestStartDate = (new Date(maxEnd)).decrementDateByWorkingDays(this.criticalCost - 1).getTime();
   this.latestFinish = this.latestStart + this.duration;
-  this.latestFinishDate = (new Date(this.latestStartDate)).incrementDateByWorkingDays(this.duration - 1).getTime();
+  this.latestFinishDate = (new Date(this.latestStartDate)).incrementDateByWorkingDays(Math.max(0,this.duration - 1)).getTime();
 };
 
 

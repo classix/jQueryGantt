@@ -1730,7 +1730,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
     }
   }
 
-  function setEarly(initial, initialDate) {
+  function setEarly(initial, rootDate) {
     var completionTime = initial.earliestFinish;
     var inferiorTasks = initial.getInferiorTasks();
     for (var i = 0; i < inferiorTasks.length; i++) {
@@ -1738,11 +1738,11 @@ GanttMaster.prototype.computeCriticalPath = function () {
       completionTime += _.find(initial.master.links, {from: initial, to: t}).lag || 0;
       if (completionTime >= t.earliestStart) {
         t.earliestStart = completionTime;
-        t.earliestStartDate = initialDate.incrementDateByWorkingDays(completionTime).getTime();
+        t.earliestStartDate = new Date(rootDate.getTime()).incrementDateByWorkingDays(t.earliestStart).getTime();
         t.earliestFinish = completionTime + t.duration;
-        t.earliestFinishDate = initialDate.incrementDateByWorkingDays(completionTime + t.duration).getTime();
+        t.earliestFinishDate = new Date(rootDate.getTime()).incrementDateByWorkingDays(t.earliestFinish - (t.duration === 0 ? 0 : 1)).getTime();
       } 
-      setEarly(t, new Date(t.start));
+      setEarly(t, rootDate);
     }
   }
 
