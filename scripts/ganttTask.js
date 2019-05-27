@@ -260,7 +260,6 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
   //if depends, start/end is set to max end + lag of superior
   var dateBySupInf = this[backward? "computeEndByInferiors" : "computeStartBySuperiors"](date, backward);
 
-
   //todo if there are dependencies the new start,end must be contained into parent dates
   /*var parent=this.getParent();
   if (start!=startBySuperiors){
@@ -380,6 +379,7 @@ Task.prototype.computeStartBySuperiors = function (proposedStart, backward) {
       supEnd = Math.max(supEnd, incrementDateByWorkingDays(link.from.end, link.lag + (addOneDay? 1 : 0)));
     }
   }
+  
   return computeStart(supEnd, backward);
 };
 
@@ -842,7 +842,7 @@ Task.prototype.isDependent = function (t) {
 
 Task.prototype.setLatest = function (maxCost, maxEnd) {
   this.latestStart = maxCost - this.criticalCost;
-  this.latestStartDate = (new Date(maxEnd)).decrementDateByWorkingDays(this.criticalCost - 1).getTime();
+  this.latestStartDate = (new Date(maxEnd)).decrementDateByWorkingDays(Math.max(0, this.criticalCost - 1)).getTime();
   this.latestFinish = this.latestStart + this.duration;
   this.latestFinishDate = (new Date(this.latestStartDate)).incrementDateByWorkingDays(Math.max(0,this.duration - 1)).getTime();
 };

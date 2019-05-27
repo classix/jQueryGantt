@@ -619,6 +619,9 @@ Ganttalendar.prototype.drawTask = function (task) {
   var drawWidth = Math.round((task.end - task.start) * self.fx);
   if (task.duration === 0) {
     drawWidth = GanttConstants.ZERO_TASK_WIDTH;
+    if (backward) {
+      x += 24 * 3600 * 1000 * self.fx - drawWidth;
+    }
   }
   var taskDimensions = {
                          x: x, 

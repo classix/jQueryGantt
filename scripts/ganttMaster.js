@@ -622,7 +622,7 @@ GanttMaster.prototype.loadTasks = function (tasks, selectedRow, isForRollBack) {
       this.removeAllLinks(task, false);
     }
 
-    if (!task.setPeriod(task.start, task.end, !isForRollBack)) {
+    if (!task.setPeriod(task.start, task.end, !isForRollBack, false, task.duration === 0, false)) {
       showErrorMsg(GanttMaster.messages.GANTT_ERROR_LOADING_DATA_TASK_REMOVED + "\n" + task.name);
       //remove task from in-memory collection
       this.tasks.splice(task.getRow(), 1);
@@ -1677,6 +1677,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
   computeMaxCost(tasks);
   var initialNodes = initials(tasks);
   calculateEarly(initialNodes);
+  correctZeroDaysTasks(_.filter(tasks, function (t) {return t.duration === 0;}));
   calculateCritical(tasks);
   calculateFloats(tasks);
 
@@ -1696,11 +1697,23 @@ GanttMaster.prototype.computeCriticalPath = function () {
     return true;
   }
 
+  function correctZeroDaysTasks (zeroTasks) {
+    _.each(zeroTasks, function (zeroTask) {
+      var unifiedDate = new Date(zeroTask.start);
+      zeroTask.earliestStartDate = unifiedDate;
+      zeroTask.earliestFinishDate = new Date(unifiedDate.getTime());
+      zeroTask.latestStartDate = new Date(unifiedDate.getTime());
+      zeroTask.latestFinishDate = new Date(unifiedDate.getTime());
+    });
+  }
+
   function computeMaxCost(tasks) {
     var max = -1;
     var maxEnd = 0;
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
+
+      if (t.duration === 0) continue;
 
       if (t.criticalCost > max)
         max = t.criticalCost;
@@ -1715,11 +1728,33 @@ GanttMaster.prototype.computeCriticalPath = function () {
     }
   }
 
+  function findInitialsDeep (task, initials) {
+    var infs = task.getInferiorTasks();
+    _.each(infs, function (inf) {
+      if (inf.duration > 0) {
+        initials.push(inf);
+      } else {
+        findInitialsDeep(inf, initials);
+      }
+    });
+  }
+
   function initials(tasks) {
     var initials = [];
     for (var i = 0; i < tasks.length; i++) {
-      if (!tasks[i].depends || tasks[i].depends == "")
-        initials.push(tasks[i]);
+      var task = tasks[i];
+
+      if (!task.depends || task.depends == "") {
+        if (task.duration > 0) {
+          initials.push(task);
+        } else {
+          // include it in the critical path, but not in the initials to avoid confusing root dates.
+          task.earliestStart = 0;
+          task.earliestFinish = task.duration;
+
+          findInitialsDeep(task, initials);
+        }
+      }
     }
     return initials;
   }
@@ -1778,9 +1813,10 @@ GanttMaster.prototype.computeCriticalPath = function () {
       _.each(_.filter(group.getChildren(), function (child) { return child.isParent();}), function (childGroup) {
         calculateGroupDates(childGroup);
       });
-      group.earliestStartDate = new Date(_.minBy(group.getChildren(), 'earliestStartDate').earliestStartDate);
+      var nonZeroChildren = _.filter(group.getChildren(), function(c) {return c.duration > 0;});
+      group.earliestStartDate = new Date(_.minBy(nonZeroChildren, 'earliestStartDate').earliestStartDate);
       group.earliestFinishDate = (new Date(group.earliestStartDate.getTime())).incrementDateByWorkingDays(Math.max(0, group.duration - 1));
-      group.latestFinishDate = new Date(_.maxBy(group.getChildren(), 'latestFinishDate').latestFinishDate);
+      group.latestFinishDate = new Date(_.maxBy(nonZeroChildren, 'latestFinishDate').latestFinishDate);
       var maxCriticalCostInGroup = _.maxBy(group.getChildren(), 'criticalCost').criticalCost;
       group.latestStartDate = (new Date(group.latestFinishDate.getTime())).decrementDateByWorkingDays(Math.max(0, maxCriticalCostInGroup - 1));
   }
