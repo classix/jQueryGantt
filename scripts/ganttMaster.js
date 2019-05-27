@@ -1680,8 +1680,13 @@ GanttMaster.prototype.computeCriticalPath = function () {
   calculateCritical(tasks);
   calculateFloats(tasks);
 
-  return tasks;
+  _.each(this.tasks, function (t) {
+    if (t.isParent() && t.level === 0) { // root group
+      calculateGroupDates(t);
+    }
+  });
 
+  return tasks;
 
   function containsAll(set, targets) {
     for (var i = 0; i < targets.length; i++) {
@@ -1765,6 +1770,19 @@ GanttMaster.prototype.computeCriticalPath = function () {
       }
       t.freeFloat = minEarliestStartOfSucc - t.earliestFinish;
     }
+  }
+
+  function calculateGroupDates (group) {
+      // beginn with the furthermost child group using recursivity to use the computed dates in the case of nested groups
+      // escpecially if a group consists only of subgroups.
+      _.each(_.filter(group.getChildren(), function (child) { return child.isParent();}), function (childGroup) {
+        calculateGroupDates(childGroup);
+      });
+      group.earliestStartDate = new Date(_.minBy(group.getChildren(), 'earliestStartDate').earliestStartDate);
+      group.earliestFinishDate = (new Date(group.earliestStartDate.getTime())).incrementDateByWorkingDays(Math.max(0, group.duration - 1));
+      group.latestFinishDate = new Date(_.maxBy(group.getChildren(), 'latestFinishDate').latestFinishDate);
+      var maxCriticalCostInGroup = _.maxBy(group.getChildren(), 'criticalCost').criticalCost;
+      group.latestStartDate = (new Date(group.latestFinishDate.getTime())).decrementDateByWorkingDays(Math.max(0, maxCriticalCostInGroup - 1));
   }
 
 };
