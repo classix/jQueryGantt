@@ -65,6 +65,7 @@ Ganttalendar.prototype.zoomGantt = function (isPlus) {
   if (newPos != pos) {
     curLevel = this.zoomLevels[newPos];
     this.zoom = curLevel;
+    this.refreshCritical();
     this.refreshGantt();
     this.goToMillis(centerMillis);
   }
@@ -128,6 +129,7 @@ Ganttalendar.prototype.fitRangeIntoView = function (startDate, endDate) {
 
   //change the zoom level
   this.zoom = this.zoomLevels[zoom];
+  this.refreshCritical();
   this.refreshGantt();
 
   // scroll to make the tasks in the middle of the view
@@ -1215,14 +1217,14 @@ Ganttalendar.prototype.setScrollPos = function (scrollX, scrollY) {
   par.scrollLeft(scrollX);
 };
 
-
-Ganttalendar.prototype.refreshGantt = function () {
-  //console.debug("refreshGantt")
-
+Ganttalendar.prototype.refreshCritical = function () {
   if (this.showCriticalPath || this.master.autoComputeCriticalPath) {
     this.master.computeCriticalPath();
   }
+};
 
+Ganttalendar.prototype.refreshGantt = function () {
+  //console.debug("refreshGantt")
 
   var par = this.element.parent();
 
@@ -1262,6 +1264,7 @@ Ganttalendar.prototype.refreshGantt = function () {
 
 Ganttalendar.prototype.fitGantt = function () {
   delete this.zoom;
+  this.refreshCritical();
   this.refreshGantt();
 };
 

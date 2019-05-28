@@ -153,6 +153,7 @@ GanttMaster.prototype.init = function (workSpace) {
   }).bind("refresh.gantt", function () {
     // redraws Ganttalendar (the table with the bars and dates)
     var gantt = self.gantt;
+    gantt.refreshCritical();
     gantt.refreshGantt();
   });
 
@@ -689,8 +690,9 @@ GanttMaster.prototype.taskIsChanged = function () {
   this.element.oneTime(50, "gnnttaskIsChanged", function () {
     //console.debug("task Is Changed real call to redraw");
     //var profiler = new Profiler("gm_taskIsChangedReal");
+    master.gantt.refreshCritical();
     master.editor.redraw();
-    master.gantt.refreshGantt();
+    master.gantt.refreshGantt(); 
     master.element.trigger("gantt.refreshGanttCompleted");
     // send the updated data to ClassiX Core
     if (master.autoUpdate) {
@@ -740,6 +742,7 @@ GanttMaster.prototype.checkButtonPermissions = function () {
 
 
 GanttMaster.prototype.redraw = function () {
+  this.gantt.refreshCritical();
   this.editor.redraw();
   this.gantt.refreshGantt();
 };
@@ -1199,6 +1202,7 @@ GanttMaster.prototype.collapse = function (task, all) {
     descs[i].rowElement.hide();
 
 
+  this.gantt.refreshCritical();
   this.gantt.refreshGantt();
 
 };
@@ -1244,6 +1248,7 @@ GanttMaster.prototype.showHideNonCriticalTasks =  function () {
     });
   }
   this.nonCriticalHidden = !this.nonCriticalHidden;
+  this.gantt.refreshCritical();
   this.gantt.refreshGantt();
   this.element.parent().find(".onlyCriticalTasksButton").toggleClass("redButton");
 };
@@ -1305,6 +1310,7 @@ GanttMaster.prototype.expand = function (task,all) {
     childTask.rowElement.show();
   }
 
+  this.gantt.refreshCritical();
   this.gantt.refreshGantt();
 
 };
