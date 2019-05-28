@@ -588,7 +588,7 @@ Ganttalendar.prototype.create = function (zoom, originalStartmillis, originalEnd
       var table = createGantt(cachedParameter.zoom, cachedParameter.periodStart, cachedParameter.periodEnd);
       callback(table);
     } else {
-      self.master.setHolidayErrorOnTransaction(startDate, endDate);
+      self.master.setHolidayErrorOnTransaction(startDate, endDate, true);
     }
   }, {lite: true});
 

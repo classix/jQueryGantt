@@ -60,12 +60,12 @@ var receiveMessage = function (event)
       // check if this was a response of a holidays request
       if (ge) {
         // normal transactions
-        if (ge.__chachedTransaction) {
-          ge.registerTransaction(ge.__chachedTransaction.func, ge.__chachedTransaction.options);
+        if (ge.__cachedTransaction) {
+          ge.registerTransaction(ge.__cachedTransaction.func, ge.__cachedTransaction.options);
         } 
         // lite transactions (used mainly for rendering)
-        if (ge.__chachedLiteTransaction) {
-          ge.registerTransaction(ge.__chachedLiteTransaction.func, ge.__chachedLiteTransaction.options);
+        if (ge.__cachedLiteTransaction) {
+          ge.registerTransaction(ge.__cachedLiteTransaction.func, ge.__cachedLiteTransaction.options);
         }
       }
       break;

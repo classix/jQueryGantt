@@ -1345,7 +1345,7 @@ GanttMaster.prototype.setErrorOnTransaction = function (errorMessage, task) {
   }
 };
 
-GanttMaster.prototype.setHolidayErrorOnTransaction = function (start, end) {
+GanttMaster.prototype.setHolidayErrorOnTransaction = function (start, end, forceOnLite) {
 
   end = _.defaultTo(end, start);
 
@@ -1362,7 +1362,7 @@ GanttMaster.prototype.setHolidayErrorOnTransaction = function (start, end) {
     }
   };
 
-  if (this.__currentTransaction) { // try to set the holiday request on a normal transaction
+  if (!forceOnLite && this.__currentTransaction) { // try to set the holiday request on a normal transaction
     genericErrorSetter(this.__currentTransaction);
   } else if (this.__currentLiteTransaction) { // if no normal transaction is found, try to set the request on a lite transaction
     genericErrorSetter(this.__currentLiteTransaction);
@@ -1391,7 +1391,7 @@ GanttMaster.prototype.registerTransaction = function (func, options) {
   // execute the function
   func();
   // clear cached transaction, after it has been executed
-  var transName = options.lite ? '__chachedLiteTransaction' : '__chachedTransaction';
+  var transName = options.lite ? '__cachedLiteTransaction' : '__cachedTransaction';
   if (ge[transName] && func === ge[transName].func && options === ge[transName].options) {
     ge[transName] = null;
   }
@@ -1417,7 +1417,7 @@ GanttMaster.prototype.endTransaction = function (withoutUndo, lite) {
       if (this.proactiveMode) {
         // here we need to send a get_locale message
         requestHolidays(this.__currentLiteTransaction.holidayRequest.startDate, this.__currentLiteTransaction.holidayRequest.endDate);
-        this.__chachedLiteTransaction = {
+        this.__cachedLiteTransaction = {
           func: this.__currentLiteTransaction.func, 
           options: this.__currentLiteTransaction.options 
         };
@@ -1484,7 +1484,7 @@ GanttMaster.prototype.endTransaction = function (withoutUndo, lite) {
       if (this.proactiveMode) {
         // here we need to send a get_locale message
         requestHolidays(this.__currentTransaction.holidayRequest.startDate, this.__currentTransaction.holidayRequest.endDate);
-        this.__chachedTransaction = {
+        this.__cachedTransaction = {
           func: this.__currentTransaction.func, 
           options: this.__currentTransaction.options 
         };
