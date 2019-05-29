@@ -80,7 +80,6 @@ $.gridify = function (table, opt) {
     }
 
   }).on("mousedown.gdf", function (e) {
-    //console.debug("mousedown.gdf")
     var colHeader = $(this);
 
     var nextCol = colHeader.next();
@@ -95,7 +94,6 @@ $.gridify = function (table, opt) {
       $("body").unselectable();
       $.gridify.columInResize = colHeader;
       //on event for start resizing
-      //console.debug("start resizing");
       $(document).on("mousemove.gdf", function (e) {
 
         e.preventDefault();
@@ -110,7 +108,6 @@ $.gridify = function (table, opt) {
 
         //on mouse up on body to stop resizing
       }).on("mouseup.gdf", function () {
-        //console.debug("mouseup.gdf")
 
         //$("body").css({cursor: "auto"});
 
@@ -122,7 +119,6 @@ $.gridify = function (table, opt) {
     }
 
   }).on("dblclick.gdf", function () {
-    //console.debug("dblclick.gdf")
     var col = $(this);
 
     if (!col.is(".gdfResizable"))
@@ -192,11 +188,9 @@ $.splittify = {
 
       $.splittify.splitterBar = $(this);
       //on event for start resizing
-      //console.debug("start splitting");
       //var realW = firstBox.get(0).scrollWidth;
       $("body").unselectable().on("mousemove.gdf", function (e) {
         //manage resizing
-        //console.debug(e.pageX - $.gridify.columInResize.offset().left)
 
         e.preventDefault();
 
@@ -215,7 +209,6 @@ $.splittify = {
 
         //on mouse up on body to stop resizing
       }).on("mouseup.gdf", function () {
-        //console.debug("stop splitting");
         $(this).off("mousemove.gdf").off("mouseup.gdf").clearUnselectable();
         delete $.splittify.splitterBar;
 
@@ -354,7 +347,6 @@ function computeEndDate(end, backward) {
 
 function computeEndByDuration(start, duration) {
   var d = new Date(start);
-  //console.debug("computeEndByDuration start ",d,duration)
   var q = duration - 1;
   while (q > 0) {
     d.setDate(d.getDate() + 1);
@@ -399,15 +391,13 @@ var incrementOneWorkingDateFromMillis = function (millis) {
 
 
 function recomputeDuration(start, end) {
-  //console.debug("recomputeDuration");
   return new Date(start).distanceInWorkingDays(new Date(end));
 }
 
 function resynchDates(schedulingDir, leavingField, startField, startMilesField, durationField, endField, endMilesField) {
   var backward = schedulingDir === GanttConstants.SCHEDULE_DIR.BACKWARD;
-  //console.debug("resynchDates",leavingField.prop("name"), startField.prop("name"), startMilesField.prop("name"), durationField.prop("name"), endField.prop("name"), endMilesField.prop("name"));
+  
   function resynchDatesSetFields(command) {
-    //console.debug("resynchDatesSetFields",command);
     //var duration = parseInt(durationField.val());
     var duration = parseInt(durationField.val());
 
@@ -435,7 +425,6 @@ function resynchDates(schedulingDir, leavingField, startField, startMilesField, 
       date.setHours(0, 0, 0, 0);
       start = computeStart(date.getTime());
     } else if ("CHANGE_DURATION" == command) {
-      //console.debug("CHANGE_DURATION",new Date(start),new Date(end))
       if (duration !== 0) {
         duration = new Date(start).distanceInWorkingDays(new Date(end));
       }
@@ -629,7 +618,6 @@ jQuery.fn.isValueChanged = function () {
 		var el = $(this);
 		var val=(el.is(":checkbox,:radio")?el.prop("checked"):el.val())+"";
 		if (val != el.data("_oldvalue") + "") {
-			//console.debug("io sono diverso "+el.prop("id")+ " :"+el.val()+" != "+el.data("_oldvalue"));
 			ret = true;
 			return false;
 		}

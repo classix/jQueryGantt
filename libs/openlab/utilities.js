@@ -263,7 +263,6 @@ $.fn.clearUnselectable = function () {
 var __initedComponents = new Object();
 
 function initialize(url, type, ndo) {
-  //console.debug("initialize before: " + url);
   var normUrl = url.asId();
   var deferred = $.Deferred();
 
@@ -281,18 +280,15 @@ function initialize(url, type, ndo) {
         dataType:   "script",
         cache:      true,
         success:    function () {
-          //console.debug("initialize loaded:" + url);
           deferred.resolve()
         },
         error:      function () {
-          //console.debug("initialize failed:" + url);
           deferred.reject();
         }
       });
 
 
     } else {
-      //console.debug(url+" as DOM");
       //var text = getContent(url);
       url = url + (url.indexOf("?") > -1 ? "&" : "?") + buildNumber;
       var text = $.ajax({
@@ -301,13 +297,11 @@ function initialize(url, type, ndo) {
         dataType: "html",
         cache:    true,
         success:  function (text) {
-          //console.debug("initialize loaded:" + url);
           ndo = ndo || $("body");
           ndo.append(text);
-          deferred.resolve()
+          deferred.resolve();
         },
         error:    function () {
-          //console.debug("initialize failed:" + url);
           deferred.reject();
         }
       });

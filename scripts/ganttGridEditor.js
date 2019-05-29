@@ -34,11 +34,9 @@ function GridEditor(master) {
 
 
 GridEditor.prototype.fillEmptyLines = function () {
-  //console.debug("fillEmptyLines")
   var factory = new TaskFactory(this.master);
   var master = this.master;
 
-  //console.debug("GridEditor.fillEmptyLines");
   var rowsToAdd = master.minRowsInEditor - this.element.find(".taskEditRow").length;
   var empty=this.element.find(".emptyRow").length;
   rowsToAdd=Math.max(rowsToAdd,empty>5?0:5-empty);
@@ -95,8 +93,6 @@ GridEditor.prototype.fillEmptyLines = function () {
 
 
 GridEditor.prototype.addTask = function (task, row, hideIfParentCollapsed) {
-  //console.debug("GridEditor.addTask",task,row);
-  //var prof = new Profiler("editorAddTaskHtml");
 
   //remove extisting row
   this.element.find('[taskId="' + task.id + "\"]").remove();
@@ -138,7 +134,6 @@ GridEditor.prototype.addTask = function (task, row, hideIfParentCollapsed) {
 };
 
 GridEditor.prototype.refreshExpandStatus = function (task) {
-  //console.debug("refreshExpandStatus",task);
   if (!task) return;
   if (task.isParent()) {
     task.rowElement.addClass("isParent");
@@ -154,8 +149,6 @@ GridEditor.prototype.refreshExpandStatus = function (task) {
 };
 
 GridEditor.prototype.refreshTaskRow = function (task) {
-  //console.debug("refreshTaskRow")
-  //var profiler = new Profiler("editorRefreshTaskRow");
 
   var canWrite= GanttMaster.permissions.canWrite && task.canWrite;
 
@@ -203,12 +196,9 @@ GridEditor.prototype.refreshTaskRow = function (task) {
 
   //Enhancing the function to perform own operations
   this.master.element.trigger('gantt.task.afterupdate.event', task);
-  //profiler.stop();
 };
 
 GridEditor.prototype.redraw = function () {
-  //console.debug("GridEditor.prototype.redraw")
-  //var prof = new Profiler("ganttGridEditorRedraw");
   for (var i = 0; i < this.master.tasks.length; i++) {
     this.refreshTaskRow(this.master.tasks[i]);
   }
@@ -228,12 +218,10 @@ GridEditor.prototype.reset = function () {
 
 GridEditor.prototype.bindRowEvents = function (task, taskRow) {
   var self = this;
-  //console.debug("bindRowEvents",this,this.master,GanttMaster.permissions.canWrite, task.canWrite);
 
   //bind row selection
   taskRow.click(function (event) {
     var row = $(this);
-    //console.debug("taskRow.click",row.attr("taskid"),event.target)
     //var isSel = row.hasClass("rowSelected");
     row.closest("table").find(".rowSelected").removeClass("rowSelected");
     row.addClass("rowSelected");
@@ -331,7 +319,6 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
             taskId: taskId
           };
           var dates = resynchDates(self.master.schedulingDirection, inp, row.find("[name=start]"), row.find("[name=startIsMilestone]"), row.find("[name=duration]"), row.find("[name=end]"), row.find("[name=endIsMilestone]"));
-          //console.debug("resynchDates",new Date(dates.start), new Date(dates.end),dates.duration)
           //update task from editor
           cachedParameter.start = _.cloneDeep(dates.start);
           cachedParameter.end = _.cloneDeep(dates.end);
@@ -375,8 +362,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     }
 
   });
-
-
+  
   var updateFunction = function (event) {
     var el = $(this);
     var row = el.closest("tr");
@@ -384,7 +370,6 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     var task = self.master.getTask(taskId);
     //update task from editor
     var field = el.prop("name");
-    //console.debug("blur",field)
 
     var par;
 

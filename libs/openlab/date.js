@@ -322,7 +322,6 @@ Date.parseString = function(val, format,lenient) {
     var f=format.replace("MMMM","M").replace("MMM","M").replace("MM","M")
     .replace("yyyy","y").replace("yyy","y").replace("yy","y")
     .replace("dd","d");
-    //console.debug("second round with format "+f);
     return this._getDate(val, f);
   } else {
     return theDate;
@@ -541,7 +540,6 @@ Date.prototype.isToday=function(){
 
 
 Date.prototype.incrementDateByWorkingDays=function (days) {
-  //console.debug("incrementDateByWorkingDays start ",d,days)
   var q = Math.abs(days);
   while (q > 0) {
     this.setDate(this.getDate() + (days > 0 ? 1 : -1));
@@ -601,8 +599,6 @@ Date.prototype.distanceInWorkingDays= function (toDate) {
     pos.setHours(12, 0, 0, 0);
   }
   days=days*(this>toDate?-1:1);
-
-  //console.debug("distanceInWorkingDays",this,toDate,days);
   return days;
 };
 

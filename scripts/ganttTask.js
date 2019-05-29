@@ -97,10 +97,8 @@ Task.prototype.clone = function () {
 //<%---------- SET PERIOD ---------------------- --%>
 Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDuration, fromEditor) {
 
-  //console.debug("setPeriod ",this.code,this.name,new Date(start), new Date(end));
-  //var profilerSetPer = new Profiler("gt_setPeriodJS");
-
   var backward = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
+  var noSchedule = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
 
   if (start instanceof Date) {
     start = start.getTime();
@@ -289,7 +287,6 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
     }
     this.start = start;
     this.end = end;
-    //profiler.stop();
 
     //check global boundaries
     if (this.start < this.master.minEditableDate || this.end > this.master.maxEditableDate) {
@@ -312,7 +309,7 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
 
   }
 
-  //console.debug("set period: somethingChanged",this);
+  
   if (!updateTree(this)) {
     return false;
   }
@@ -404,7 +401,7 @@ Task.prototype.computeEndByInferiors = function(proposedEnd, backward) {
 
 function updateTree(task) {
   
-  //console.debug("updateTree ",task.code,task.name);
+  
   var error;
 
   //try to enlarge parent
@@ -450,12 +447,12 @@ function updateTree(task) {
 
 //<%---------- CHANGE STATUS ---------------------- --%>
 Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
-  //console.debug("changeStatus: "+this.name+" from "+this.status+" -> "+newStatus);
+  
 
   var cone = this.getDescendant();
 
   function propagateStatus(task, newStatus, manuallyChanged, propagateFromParent, propagateFromChildren) {
-    //console.debug("propagateStatus",task.name, task.status,newStatus, manuallyChanged, propagateFromParent, propagateFromChildren);
+    
     var oldStatus = task.status;
 
     //no changes exit
@@ -579,7 +576,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
     }
     if (!todoOk) {
       task.status = oldStatus;
-      //console.debug("status rolled back: "+task.name + " to " + oldStatus);
+      
     }
 
     return todoOk;
@@ -619,7 +616,7 @@ Task.prototype.changeStatus = function (newStatus,forceStatusCheck) {
 };
 
 Task.prototype.synchronizeStatus = function () {
-  //console.debug("synchronizeStatus",this.name);
+  
   var oldS = this.status;
   this.status = this.getParent()?this.getParent().status:"STATUS_UNDEFINED"; // di default si invalida lo stato mettendo quello del padre, in modo che inde/outd siano consistenti
   return this.changeStatus(oldS,true);
@@ -776,7 +773,7 @@ Task.prototype.getInferiorTasks = function () {
 };
 
 Task.prototype.deleteTask = function () {
-  //console.debug("deleteTask",this.name,this.master.deletedTaskIds)
+  
   //if is the current one remove it
   if (this.master.currentTask && this.master.currentTask.id==this.id)
     delete this.master.currentTask;
@@ -820,7 +817,7 @@ Task.prototype.isNew = function () {
 };
 
 Task.prototype.isDependent = function (t) {
-  //console.debug("isDependent",this.name, t.name)
+  
   var task = this;
   var dep = this.master.links.filter(function (link) {
     return link.from == task;
@@ -850,7 +847,7 @@ Task.prototype.setLatest = function (maxCost, maxEnd) {
 
 //<%------------------------------------------  INDENT/OUTDENT --------------------------------%>
 Task.prototype.indent = function () {
-  //console.debug("indent", this);
+  
   //a row above must exist
   var row = this.getRow();
 
@@ -923,7 +920,7 @@ Task.prototype.indent = function () {
 
 
 Task.prototype.outdent = function () {
-  //console.debug("outdent", this);
+  
 
   //a level must be >1 -> cannot escape from root
   if (this.level <= 1)
@@ -980,7 +977,7 @@ Task.prototype.outdent = function () {
 
 //<%------------------------------------------  MOVE UP / MOVE DOWN --------------------------------%>
 Task.prototype.moveUp = function () {
-  //console.debug("moveUp", this);
+  
   var ret = false;
 
   //a row above must exist
@@ -1030,7 +1027,7 @@ Task.prototype.moveUp = function () {
 
 
 Task.prototype.moveDown = function () {
-  //console.debug("moveDown", this);
+  
 
   //a row below must exist, and cannot move root task
   var row = this.getRow();
