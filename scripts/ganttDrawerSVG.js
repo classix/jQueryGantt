@@ -722,6 +722,7 @@ Ganttalendar.prototype.drawTask = function (task) {
             // this is needed because distanceInWorkingDays returns 1 on same dates
             days -= (days > 0) ? 1 : -1; 
             if (backward) {
+              days = -1 * days;
               _.each(infers, function (link) {
                 var inferTask = link.to;
                 var dependsInp = $('.taskEditRow[taskid="'+ inferTask.id + '"] input[name=depends]');
@@ -729,7 +730,6 @@ Ganttalendar.prototype.drawTask = function (task) {
                 var newDepends = _.join(_.map(_.split(oldDepends, ","), function (d) {
                   var parts = _.split(d, ":");
                   if (parseInt(parts[0]) === taskIndex) {
-                    days = -1 * days;
                     parts[1] = parseInt((parts[1] || 0)) + days;
                     if (parts[1] <= 0) parts.splice(1,1);
                   }
