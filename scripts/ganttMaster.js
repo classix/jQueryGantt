@@ -1674,15 +1674,16 @@ GanttMaster.prototype.computeCriticalPath = function () {
   computeMaxCost(tasks);
   var initialNodes = initials(tasks);
   calculateEarly(initialNodes);
-  correctZeroDaysTasks(_.filter(tasks, function (t) {return t.duration === 0;}));
-  calculateCritical(tasks);
-  calculateFloats(tasks);
-
+  
   _.each(this.tasks, function (t) {
     if (t.isParent() && t.level === 0) { // root group
       calculateGroupDates(t);
     }
   });
+
+  correctZeroDaysTasks(_.filter(this.tasks /* this.tasks and not task, because: include 0 days group here */, function (t) {return t.duration === 0;})); // this includes also 0 days groups
+  calculateCritical(tasks);
+  calculateFloats(tasks);
 
   return tasks;
 
@@ -1705,18 +1706,26 @@ GanttMaster.prototype.computeCriticalPath = function () {
   }
 
   function computeMaxCost(tasks) {
+
+    if (!tasks || !tasks.length) return;
+
     var max = -1;
-    var maxEnd = 0;
+    var maxTask = null;
+    var maxEnd = tasks[0].end; // any value 
+
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
 
       if (t.duration === 0) continue;
 
-      if (t.criticalCost > max)
+      if (t.criticalCost > max) {
         max = t.criticalCost;
+        maxTask = t;
+      }
+    }
 
-      if (t.end > maxEnd)
-        maxEnd = t.end;
+    if (maxTask) {
+      maxEnd = (new Date(maxTask.start)).incrementDateByWorkingDays(Math.max(0, max - 1)).getTime();
     }
     
     for (var j = 0; j < tasks.length; j++) {
@@ -1811,6 +1820,7 @@ GanttMaster.prototype.computeCriticalPath = function () {
         calculateGroupDates(childGroup);
       });
       var nonZeroChildren = _.filter(group.getChildren(), function(c) {return c.duration > 0;});
+      if (!nonZeroChildren.length) return; //zero days group
       group.earliestStartDate = new Date(_.minBy(nonZeroChildren, 'earliestStartDate').earliestStartDate);
       group.earliestFinishDate = (new Date(group.earliestStartDate.getTime())).incrementDateByWorkingDays(Math.max(0, group.duration - 1));
       group.latestFinishDate = new Date(_.maxBy(nonZeroChildren, 'latestFinishDate').latestFinishDate);
