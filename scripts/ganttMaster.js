@@ -534,7 +534,7 @@ GanttMaster.prototype.loadProject = function (project, keepScroll) {
 
   this.registerTransaction(function() {
 
-    self.serverClientTimeOffset = typeof project.serverTimeOffset !="undefined"? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
+    self.serverClientTimeOffset = typeof project.serverTimeOffset != "undefined" ? (parseInt(project.serverTimeOffset) + new Date().getTimezoneOffset() * 60000) : 0;
 
     if (project.minEditableDate)
       self.minEditableDate = computeStart(project.minEditableDate, backward);
@@ -786,11 +786,13 @@ GanttMaster.prototype.saveGantt = function (forTransaction) {
     delete cloned.rowElement;
     delete cloned.ganttElement;
 
+    var self = this;
+
     //shift back to server side timezone
     if (!forTransaction) {
       _.each(["start", "end", "earliestStart", "earliestFinish", "latestStart", "latestFinish"], function (prop) {
-        if (!_.isNil(cloned.earliestStart)) {
-          cloned[prop] -= this.serverClientTimeOffset;
+        if (!_.isNil(cloned[prop])) {
+          cloned[prop] -= self.serverClientTimeOffset;
         }
       });
     }
