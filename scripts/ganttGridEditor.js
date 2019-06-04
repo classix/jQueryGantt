@@ -151,6 +151,7 @@ GridEditor.prototype.refreshExpandStatus = function (task) {
 GridEditor.prototype.refreshTaskRow = function (task) {
 
   var canWrite= GanttMaster.permissions.canWrite && task.canWrite;
+  var noSchedule = !this.master.autoScheduling || this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
 
   var row = task.rowElement;
 
@@ -188,10 +189,10 @@ GridEditor.prototype.refreshTaskRow = function (task) {
   else
     row.removeClass("collapsed");
 
-  row.find("[data-ES]").text(!_.isNil(task.earliestStartDate) ? new Date(task.earliestStartDate).format() : " - ");
-  row.find("[data-EE]").text(!_.isNil(task.earliestFinishDate) ? new Date(task.earliestFinishDate).format() : " - ");
-  row.find("[data-LS]").text(!_.isNil(task.latestStartDate) ? new Date(task.latestStartDate).format() : " - ");
-  row.find("[data-LE]").text(!_.isNil(task.latestFinishDate) ? new Date(task.latestFinishDate).format() : " - ");
+  row.find("[data-ES]").text(!_.isNil(task.earliestStartDate) && !noSchedule ? new Date(task.earliestStartDate).format() : " - ");
+  row.find("[data-EE]").text(!_.isNil(task.earliestFinishDate) && !noSchedule ? new Date(task.earliestFinishDate).format() : " - ");
+  row.find("[data-LS]").text(!_.isNil(task.latestStartDate) && !noSchedule ? new Date(task.latestStartDate).format() : " - ");
+  row.find("[data-LE]").text(!_.isNil(task.latestFinishDate) && !noSchedule ? new Date(task.latestFinishDate).format() : " - ");
 
 
   //Enhancing the function to perform own operations
@@ -362,7 +363,7 @@ GridEditor.prototype.bindRowInputEvents = function (task, taskRow) {
     }
 
   });
-  
+
   var updateFunction = function (event) {
     var el = $(this);
     var row = el.closest("tr");

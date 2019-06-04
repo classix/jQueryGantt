@@ -601,6 +601,7 @@ Ganttalendar.prototype.drawTask = function (task) {
   
   var self = this;
   var backward = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
+  var noSchedule = !this.master.autoScheduling || this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
   
   editorRow = task.rowElement;
   if (!editorRow.is(':visible')) return;
@@ -610,9 +611,6 @@ Ganttalendar.prototype.drawTask = function (task) {
   //var normX = Math.round((normStart - self.startMillis) * self.fx);
 
   var x = Math.round((task.start - self.startMillis) * self.fx);
-
-  
-
 
   task.hasChild = task.isParent();
 
@@ -712,7 +710,7 @@ Ganttalendar.prototype.drawTask = function (task) {
           // avoid computing the inferiors and waste resources if you know you are not in the backward mode
           var infers = backward ? task.getInferiors() : null;
 
-          if ((!backward && !task.depends) || (backward && !infers.length)) {
+          if (noSchedule || (!backward && !task.depends) || (backward && !infers.length)) {
             cachedParameter.start = new Date(s);
             self.master.registerTransaction(function () {
               self.master.moveTask(self.master.getTask(cachedParameter.taskId), cachedParameter.start);
@@ -906,9 +904,6 @@ Ganttalendar.prototype.drawTask = function (task) {
   }
   //ask for redraw link
   self.redrawLinks();
-
-  //prof.stop();
-
 
   function _createTaskSVG(task, dimensions) {
     var svg = self.svg;

@@ -45,8 +45,8 @@ function TaskFactory(master) {
         break;
       }
       case GanttConstants.SCHEDULE_DIR.NO_SCHEDULING: {
-        newStart = (new Date(start)).setHours(0,0,0,0);
-        newEnd = (new Date(end)).setHours(23,59,59,999);
+        newStart = computeStart(start, false);
+        newEnd = computeEnd(end, true);
         break;
       }
     }
@@ -98,7 +98,7 @@ Task.prototype.clone = function () {
 Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDuration, fromEditor) {
 
   var backward = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
-  var noSchedule = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
+  var noSchedule = !this.master.autoScheduling || this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
 
   if (start instanceof Date) {
     start = start.getTime();
@@ -130,7 +130,6 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDura
 
   //if are equals do nothing and return true
   if (!force && start == originalPeriod.start && end == originalPeriod.end && newDuration == originalPeriod.duration) {
-    //console.debug("Periods are identical!")
     return true;
   }
 
@@ -150,48 +149,32 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDura
     }
   }
 
-  //set a legal start
-  //start = computeStart(start); //todo R&S 30/3/2016 messo in vetta
-
-  //if there are dependencies compute the start date and eventually moveTo
-  var dateBySupInf = this[backward ? "computeEndByInferiors" : "computeStartBySuperiors"](backward ? end : start, backward);
-  if (dateBySupInf != (backward ? end : start)) {
-    return this.moveTo(dateBySupInf, false);
+  if (!noSchedule) {
+    //if there are dependencies compute the start date and eventually moveTo
+    var dateBySupInf = this[backward ? "computeEndByInferiors" : "computeStartBySuperiors"](backward ? end : start, backward);
+    if (dateBySupInf != (backward ? end : start)) {
+      return this.moveTo(dateBySupInf, false);
+    }
   }
 
   var somethingChanged = false;
 
-  if (backward) {
-    if (this.end != end) {
-      this.end = end;
-      somethingChanged = true;
-    }
-  } else {
-    if (this.start != start) {
-      this.start = start;
-      somethingChanged = true;
-    }
+  if (this.end != end) {
+    this.end = end;
+    somethingChanged = true;
   }
+
+  if (this.start != start) {
+    this.start = start;
+    somethingChanged = true;
+  }
+  
 
   if ((noDuration && this.duration !== 0) || (!noDuration && this.duration === 0)) {
     somethingChanged = true;
   }
 
-  if (backward) {
-    if (this.start != start) {
-      this.start = start;
-      somethingChanged = true;
-    }
-  } else {
-    if (this.end != end) {
-      this.end = end;
-      somethingChanged = true;
-    }
-  }
-
   this.duration = noDuration ? 0 : recomputeDuration(this.start, this.end);
-
-  //profilerSetPer.stop();
 
   //nothing changed exit
   if (!somethingChanged)
@@ -207,32 +190,31 @@ Task.prototype.setPeriod = function (start, end, force, ignoreMilestones, noDura
 
   //check global boundaries
   if (this.start < this.master.minEditableDate || this.end > this.master.maxEditableDate) {
-    this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages.CHANGE_OUT_OF_SCOPE, this);
+    this.master.setErrorOnTransaction("\"" + this.name + "\"\n" + GanttMaster.messages.CHANGE_OUT_OF_SCOPE, this);
     todoOk = false;
   }
 
-  //console.debug("set period: somethingChanged",this);
   if (todoOk && !updateTree(this)) {
     todoOk = false;
   }
   
-  if (todoOk) {
+  if (!noSchedule && todoOk) {
     if (backward) {
       todoOk = this.propagateToSuperiors(noDuration ? incrementOneWorkingDateFromMillis(start) : start);
     } else {
       todoOk = this.propagateToInferiors(noDuration ? decrementOneWorkingDateFromMillis(end) : end);
     }
   }
+  
   return todoOk;
 };
 
 
 //<%---------- MOVE TO ---------------------- --%>
 Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
-  //console.debug("moveTo ",this.code,this.name,new Date(start),this.duration,ignoreMilestones);
-  //var profiler = new Profiler("gt_task_moveTo");
 
   var backward = this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.BACKWARD;
+  var noSchedule = !this.master.autoScheduling || this.master.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING;
 
   if (date instanceof Date) {
     date = date.getTime();
@@ -242,8 +224,6 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
     start: this.start,
     end:   this.end
   };
-
-  var wantedDateMillis = date;
 
   //set a legal start/end
   date = backward ? computeEnd(date, backward) : computeStart(date, backward);
@@ -255,36 +235,24 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
     return false;
   } 
 
-  //if depends, start/end is set to max end + lag of superior
-  var dateBySupInf = this[backward? "computeEndByInferiors" : "computeStartBySuperiors"](date, backward);
+  var dateBySupInf = date;
 
-  //todo if there are dependencies the new start,end must be contained into parent dates
-  /*var parent=this.getParent();
-  if (start!=startBySuperiors){
-    var proposedEnd = computeEndByDuration(startBySuperiors, this.duration);
-    // if outside parent's scoce error
-    if (parent && (startBySuperiors<parent.start || proposedEnd>parent.end)) {
-      this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages["CANNOT_MOVE_TASK"], this);
-      return false;
-    } else {
-      start = startBySuperiors;
-    }
-  }*/
+  if (!noSchedule) {
+    //if depends, start/end is set to max end + lag of superior
+    dateBySupInf = this[backward? "computeEndByInferiors" : "computeStartBySuperiors"](date, backward);
+  }
 
   var start = backward ? computeStartByDuration(dateBySupInf, this.duration) : dateBySupInf;
   var end = backward ? dateBySupInf : computeEndByDuration(dateBySupInf, this.duration);
 
-  if (this[backward ? "end" : "start"] != dateBySupInf || this[backward ? "end" : "start"] != wantedDateMillis) {
-    /*//in case of end is milestone it never changes, but recompute duration
-    if (!ignoreMilestones && this.endIsMilestone) {
-      end = this.end;
-      this.duration = recomputeDuration(start, end);
-    }*/
+  if (this[backward ? "end" : "start"] != dateBySupInf || this[backward ? "end" : "start"] != date) {
+
     //in case of end is milestone it never changes!
     if (!ignoreMilestones && this[backward ? "startIsMilestone" : "endIsMilestone"] && (backward ? (start!=this.start) : (end!=this.end))) {
       this.master.setErrorOnTransaction("\"" + this.name + "\"\n" +GanttMaster.messages[backward ? "START_IS_MILESTONE" : "END_IS_MILESTONE"], this);
       return false;
     }
+
     this.start = start;
     this.end = end;
 
@@ -308,16 +276,19 @@ Task.prototype.moveTo = function (date, ignoreMilestones, groupMove) {
     }
 
   }
-
   
   if (!updateTree(this)) {
     return false;
   }
 
-  if (backward) {
-    return this.propagateToSuperiors(start);
+  if (!noSchedule) {
+    if (backward) {
+      return this.propagateToSuperiors(start);
+    } else {
+      return this.propagateToInferiors(end);
+    }
   } else {
-    return this.propagateToInferiors(end);
+    return true;
   }
 };
 

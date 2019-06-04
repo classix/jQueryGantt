@@ -20,9 +20,11 @@
       <button onclick="$('#workSpace').trigger('zoomMinus.gantt'); return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_ZOOM_OUT" data-ml-attribute="title"><span class="teamworkIcon">)</span></button>
       <button onclick="$('#workSpace').trigger('zoomPlus.gantt');return false;" class="button textual icon " data-ml-text="GanttMaster.messages.BUTTON_ZOOM_IN" data-ml-attribute="title"><span class="teamworkIcon">(</span></button>
       <span class="ganttButtonSeparator"></span>
-      <button onclick="ge.showHideCriticalPath();return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH" data-ml-attribute="title"><span class="teamworkIcon showCriticalPathButton">&pound;</span></button>
-      <button onclick="ge.showHideNonCriticalTasks();return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH_ONLY" data-ml-attribute="title"><span class="teamworkIcon onlyCriticalTasksButton">8</span></button>
+      <button onclick="ge.showHideCriticalPath(); return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH" data-ml-attribute="title"><span class="teamworkIcon showCriticalPathButton">&pound;</span></button>
+      <button onclick="ge.showHideNonCriticalTasks(); return false;" class="button textual icon requireCanSeeCriticalPath" data-ml-text="GanttMaster.messages.BUTTON_CRITICAL_PATH_ONLY" data-ml-attribute="title"><span class="teamworkIcon onlyCriticalTasksButton">8</span></button>
       <span class="ganttButtonSeparator requireCanSeeCriticalPath"></span>
+      <button onclick="ge.toggleAutoScheduling(); return false;" class="button textual icon requireScheduling" data-ml-text="GanttMaster.messages.BUTTON_AUTO_SCHEDULE" data-ml-attribute="title"><span class="teamworkIcon autoSchedulingButton">h</span></button>
+      <span class="ganttButtonSeparator requireScheduling"></span>
       <button onclick="ge.splitter.resize(.1);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SHOW_ONLY_EDITOR" data-ml-attribute="title"><span class="teamworkIcon">F</span></button>
       <button onclick="ge.splitter.resize(50);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SPLITTER_CENTER" data-ml-attribute="title"><span class="teamworkIcon">O</span></button>
       <button onclick="ge.splitter.resize(100);return false;" class="button textual icon" data-ml-text="GanttMaster.messages.BUTTON_SHOW_ONLY_TABLE" data-ml-attribute="title"><span class="teamworkIcon">R</span></button>

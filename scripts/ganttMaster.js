@@ -41,6 +41,8 @@ function GanttMaster() {
 
   this.isMultiRoot=false; // set to true in case of tasklist
 
+  this.autoScheduling = true;
+
   this.schedulingDirection = GanttConstants.SCHEDULE_DIR.FORWARD;
 
   //this.workSpace;  // the original element used for containing everything
@@ -704,7 +706,7 @@ GanttMaster.prototype.checkButtonPermissions = function () {
   var ganttButtons=this.element.parent().find(".ganttButtonBar");
 
   // show all buttons
-  ganttButtons.find(".requireCanWrite, .requireCanAdd, .requireCanInOutdent, .requireCanMoveUpDown, .requireCanDelete, .requireCanSeeCriticalPath").show();
+  ganttButtons.find(".requireCanWrite, .requireCanAdd, .requireCanInOutdent, .requireCanMoveUpDown, .requireCanDelete, .requireCanSeeCriticalPath, .requireScheduling").show();
 
   //hide buttons basing on permissions
   if (!GanttMaster.permissions.canWrite) {
@@ -733,6 +735,12 @@ GanttMaster.prototype.checkButtonPermissions = function () {
 
   // show/hide save button
   ganttButtons.find(".btnSave")[this.showSaveButton?'show':'hide']();
+
+  if (this.schedulingDirection === GanttConstants.SCHEDULE_DIR.NO_SCHEDULING) {
+    ganttButtons.find(".requireScheduling").hide();
+  } else {
+    ganttButtons.find(".autoSchedulingButton").addClass("greenButton");
+  }
 
 };
 
@@ -1202,14 +1210,46 @@ GanttMaster.prototype.showHideCriticalPath = function (mode) {
     
     if (!mode || mode === 'toggle') {
       this.gantt.showCriticalPath = !this.gantt.showCriticalPath;
+      this.element.parent().find(".showCriticalPathButton").toggleClass("redButton");
     } else if (mode === 'on') {
       this.gantt.showCriticalPath = true;
+      this.element.parent().find(".showCriticalPathButton").addClass("redButton");
     } else {
       this.gantt.showCriticalPath = false;
+      this.element.parent().find(".showCriticalPathButton").removeClass("redButton");
     }
     
     this.redraw();
-    this.element.parent().find(".showCriticalPathButton").toggleClass("redButton");
+};
+
+GanttMaster.prototype.toggleAutoScheduling = function (mode) {
+  
+  if (!mode || mode === 'toggle') {
+    mode = this.autoScheduling ? 'off' : 'on';
+  }
+  
+  if (mode === 'on') {
+    this.autoScheduling = true;
+    this.element.parent().find(".autoSchedulingButton").addClass("greenButton");
+    
+    if (this.schedulingDirection !== GanttConstants.SCHEDULE_DIR.NO_SCHEDULING) {
+      _.each(this.tasks, function (task) {
+        // fake move the intials only to force scheduling
+        //if (!task.depends || task.depends == "") {
+          //console.log(task);
+            task.setPeriod(task.start, task.end, true, false, task.duration === 0, false);
+        //}
+      });
+    }
+
+    this.redraw();
+
+  } else {
+    this.autoScheduling = false;
+    this.element.parent().find(".autoSchedulingButton").removeClass("greenButton");
+    this.redraw();
+  }
+  
 };
 
 GanttMaster.prototype.showHideNonCriticalTasks =  function () {
