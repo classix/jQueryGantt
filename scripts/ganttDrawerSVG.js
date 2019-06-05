@@ -1002,6 +1002,7 @@ Ganttalendar.prototype.drawLink = function (from, to, type) {
    * width and height into a structure.
    */
   function buildRect(item) {
+    if (!item || !item.ganttElement) return {left:0, top: 0, width: 0, height: 0};
     var p = item.ganttElement.position();
     var rect = {
       left:  parseFloat(item.ganttElement.attr("x")),
